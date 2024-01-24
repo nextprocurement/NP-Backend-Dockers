@@ -1,0 +1,95 @@
+version: "3.8"
+
+networks:
+  np-net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.128.0/24
+
+services:
+  np-solr-api:
+    build: ./np-solr-api
+    container_name: np-solr-api
+    ports:
+      - 82:82
+    environment:
+      SOLR_URL: http://solr:8983
+      #INFERENCE_URL: http://np-inferencer:90
+    depends_on:
+      - solr
+      #- inferencer
+    networks:
+      - np-net
+    volumes:
+      - ./data/source:/data/source
+      #- ./data/inference:/data/inference
+      - ./np-config:/config
+
+  solr-initializer:
+    image: alpine
+    container_name: np-solr-initializer
+    restart: "no"
+    entrypoint: |
+      /bin/sh -c "chown 8983:8983 /solr"
+    volumes:
+      - ./db/data/solr:/solr
+
+  solr:
+    image: solr:9.1.1
+    container_name: np-solr
+    restart: always
+    volumes:
+      - ./db/data/solr:/var/solr
+      - ./solr-plugins/solr-ewb-jensen-shanon-distance-plugin/solr-js-plugin/target/solr-js-plugin-1.0.0.jar:/opt/solr/dist/plugins/solr-js-plugin-1.0.0.jar
+      #- ./solr-plugins/solr-ewb-sims/solr-sims-plugin/target/solr-sims-plugin-1.0.0.jar:/opt/solr/dist/plugins/solr-sims-plugin-1.0.0.jar
+      - ./solr-config:/opt/solr/server/solr
+    ports:
+      - 8983:8983
+    entrypoint:
+      - docker-entrypoint.sh
+      - solr
+      - start
+      - -f
+      - -c
+      - -z
+      - zoo:2181
+      - -a
+      - "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044 -Djute.maxbuffer=0x5000000"
+    networks:
+      - np-net
+
+  zoo:
+    image: zookeeper
+    container_name: np-zoo
+    restart: always
+    ports:
+      - 2180:8080
+      - 2181:2181
+    environment:
+      - JVMFLAGS=-Djute.maxbuffer=50000000
+    volumes:
+      - ./db/data/zoo/data:/data
+      - ./db/data/zoo/logs:/datalog
+    networks:
+      - np-net
+
+  solr-config:
+    build: ./solr-config
+    container_name: np-solr-config
+    ports:
+      - 81:81
+    depends_on:
+      - solr
+      - zoo
+    networks:
+      - np-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./solr-config/bash_scripts:/bash_scripts
+      - ./db/data/solr:/db/data/solr
+    command:
+      - sh
+      - -c
+      - "chmod +x /bash_scripts/init_config.sh && ls /bash_scripts && bash_scripts/init_config.sh /db/data/solr/data"
