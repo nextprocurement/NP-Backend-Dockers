@@ -333,7 +333,7 @@ class SolrClient(object):
 
     def create_collection(self,
                           col_name: str,
-                          config: str = 'ewb_config',
+                          config: str = '_default',
                           nshards: int = 1,
                           replicationFactor: int = 1) -> Union[str, int]:
         """Creates a Solr collection with the given name, config, number of shards, and replication factor.

@@ -30,6 +30,7 @@ class NPSolrClient(SolrClient):
         # Read configuration from config file
         cf = configparser.ConfigParser()
         cf.read(config_file)
+        self.solr_config = "np_config"
         self.batch_size = int(cf.get('restapi', 'batch_size'))
         self.corpus_col = cf.get('restapi', 'corpus_col')
         self.no_meta_fields = cf.get('restapi', 'no_meta_fields').split(",")
@@ -66,7 +67,7 @@ class NPSolrClient(SolrClient):
         corpus_logical_name = corpus_to_index.stem.lower()
 
         # 2. Create collection
-        corpus, err = self.create_collection(col_name=corpus_logical_name)
+        corpus, err = self.create_collection(col_name=corpus_logical_name, config=self.solr_config)
         if err == 409:
             self.logger.info(
                 f"-- -- Collection {corpus_logical_name} already exists.")
@@ -76,7 +77,7 @@ class NPSolrClient(SolrClient):
                 f"-- -- Collection {corpus_logical_name} successfully created.")
 
         # 3. Add corpus collection to self.corpus_col. If Corpora has not been created already, create it
-        corpus, err = self.create_collection(col_name=self.corpus_col)
+        corpus, err = self.create_collection(col_name=self.corpus_col, config=self.solr_config)
         if err == 409:
             self.logger.info(
                 f"-- -- Collection {self.corpus_col} already exists.")
@@ -456,7 +457,7 @@ class NPSolrClient(SolrClient):
         model_name = pathlib.Path(model_to_index).stem.lower()
 
         # 2. Create collection
-        _, err = self.create_collection(col_name=model_name)
+        _, err = self.create_collection(col_name=model_name, config=self.solr_config)
         if err == 409:
             self.logger.info(
                 f"-- -- Collection {model_name} already exists.")

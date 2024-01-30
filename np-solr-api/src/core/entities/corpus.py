@@ -95,6 +95,11 @@ class Corpus(object):
             self._logger.info(ddf.head())
             self.corpus_path = DtSet['parquet']
             idfld = DtSet["idfld"]
+            
+            if idfld in self.sercheable_field:
+                self.sercheable_field.remove(idfld)
+                self.sercheable_field.append("id")
+            self._logger.info(f"sercheable_field {self.sercheable_field}")
 
             # Rename id-field to id, title-field to title and date-field to date
             ddf = ddf.rename(
@@ -104,6 +109,8 @@ class Corpus(object):
 
         with ProgressBar():
             df = ddf.compute(scheduler='processes')
+            
+        self._logger.info(df.columns)
 
         # Get number of words per document based on the lemmas column
         # NOTE: Document whose lemmas are empty will have a length of 0
@@ -123,14 +130,20 @@ class Corpus(object):
         df = df.drop(['lemmas_'], axis=1)
         df['bow'] = df['bow'].apply(lambda x: ' '.join(
             [f'{word}|{count}' for word, count in x]).rstrip() if x else None)
+        
+        self._logger.info("calcula el bow ok")
 
         # Convert dates information to the format required by Solr ( ISO_INSTANT, The ISO instant formatter that formats or parses an instant in UTC, such as '2011-12-03T10:15:30Z')
         df, cols = convert_datetime_to_strftime(df)
         df[cols] = df[cols].applymap(parseTimeINSTANT)
+        
+        self._logger.info("calcula fecha ok")
 
         # Create SearcheableField by concatenating all the fields that are marked as SearcheableField in the config file
         df['SearcheableField'] = df[self.sercheable_field].apply(
             lambda x: ' '.join(x.astype(str)), axis=1)
+        
+        self._logger.info("calcula searchable")
 
         # Save corpus fields
         self.fields = df.columns.tolist()

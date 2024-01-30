@@ -26,20 +26,10 @@ thetas_thr=3e-3
 cache_dir=/data/classifer/models
 
 # There will be one of this for each corpus avaialable at the EWB
-[cordis-config]
-title_field=title
-date_field=startDate
-EWBdisplayed=title,objective,euroSciVocCode,date
-SearcheableField=title
 
-[scopus-config]
+[np_all-config]
 title_field=title
-date_field=coverDate
-EWBdisplayed=title
-SearcheableField=title
+date_field=date
+EWBdisplayed=id_tm,title,cpv
+SearcheableField=id_tm,title,cpv
 
-[hfri-config]
-title_field=Title
-date_field=startDate
-EWBdisplayed=ProjectID,title,HostInstitutions
-SearcheableField=ProjectID,Title

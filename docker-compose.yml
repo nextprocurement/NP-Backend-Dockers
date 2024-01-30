@@ -13,7 +13,7 @@ services:
     build: ./np-solr-api
     container_name: np-solr-api
     ports:
-      - 82:82
+      - 92:82
     environment:
       SOLR_URL: http://solr:8983
       #INFERENCE_URL: http://np-inferencer:90
@@ -46,7 +46,7 @@ services:
       #- ./solr-plugins/solr-ewb-sims/solr-sims-plugin/target/solr-sims-plugin-1.0.0.jar:/opt/solr/dist/plugins/solr-sims-plugin-1.0.0.jar
       - ./solr-config:/opt/solr/server/solr
     ports:
-      - 8983:8983
+      - 8984:8983
     entrypoint:
       - docker-entrypoint.sh
       - solr
