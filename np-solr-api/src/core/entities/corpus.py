@@ -66,14 +66,14 @@ class Corpus(object):
         self.title_field = cf.get(section, "title_field")
         self.date_field = cf.get(section, "date_field")
         # TODO: Update
-        self.ewb_displayed = cf.get(section, "EWBdisplayed").split(",")
-        self.sercheable_field = cf.get(section, "SearcheableField").split(",")
-        if self.title_field in self.sercheable_field:
-            self.sercheable_field.remove(self.title_field)
-            self.sercheable_field.append("title")
-        if self.date_field in self.sercheable_field:
-            self.sercheable_field.remove(self.date_field)
-            self.sercheable_field.append("date")
+        self.MetadataDisplayed = cf.get(section, "MetadataDisplayed").split(",")
+        self.SearcheableField = cf.get(section, "SearcheableField").split(",")
+        if self.title_field in self.SearcheableField:
+            self.SearcheableField.remove(self.title_field)
+            self.SearcheableField.append("title")
+        if self.date_field in self.SearcheableField:
+            self.SearcheableField.remove(self.date_field)
+            self.SearcheableField.append("date")
 
         return
 
@@ -96,10 +96,10 @@ class Corpus(object):
             self.corpus_path = DtSet['parquet']
             idfld = DtSet["idfld"]
             
-            if idfld in self.sercheable_field:
-                self.sercheable_field.remove(idfld)
-                self.sercheable_field.append("id")
-            self._logger.info(f"sercheable_field {self.sercheable_field}")
+            if idfld in self.SearcheableField:
+                self.SearcheableField.remove(idfld)
+                self.SearcheableField.append("id")
+            self._logger.info(f"SearcheableField {self.SearcheableField}")
 
             # Rename id-field to id, title-field to title and date-field to date
             ddf = ddf.rename(
@@ -140,7 +140,7 @@ class Corpus(object):
         self._logger.info("calcula fecha ok")
 
         # Create SearcheableField by concatenating all the fields that are marked as SearcheableField in the config file
-        df['SearcheableField'] = df[self.sercheable_field].apply(
+        df['SearcheableField'] = df[self.SearcheableField].apply(
             lambda x: ' '.join(x.astype(str)), axis=1)
         
         self._logger.info("calcula searchable")
@@ -165,8 +165,8 @@ class Corpus(object):
                         "corpus_name": self.name,
                         "corpus_path": self.path_to_logical.as_posix(),
                         "fields": self.fields,
-                        "EWBdisplayed": self.ewb_displayed,
-                        "SearcheableFields": self.sercheable_field}]
+                        "MetadataDisplayed": self.MetadataDisplayed,
+                        "SearcheableFields": self.SearcheableField}]
 
         return fields_dict
 
@@ -204,7 +204,7 @@ class Corpus(object):
 
         if action == "add":
             new_SearcheableFields = [
-                el for el in new_SearcheableFields if el not in self.sercheable_field]
+                el for el in new_SearcheableFields if el not in self.SearcheableField]
             if self.title_field in new_SearcheableFields:
                 new_SearcheableFields.remove(self.title_field)
                 new_SearcheableFields.append("title")
@@ -212,7 +212,7 @@ class Corpus(object):
                 new_SearcheableFields.remove(self.date_field)
                 new_SearcheableFields.append("date")
             new_SearcheableFields = list(
-                set(new_SearcheableFields + self.sercheable_field))
+                set(new_SearcheableFields + self.SearcheableField))
         elif action == "remove":
             if self.title_field in new_SearcheableFields:
                 new_SearcheableFields.remove(self.title_field)
@@ -221,7 +221,7 @@ class Corpus(object):
                 new_SearcheableFields.remove(self.date_field)
                 new_SearcheableFields.append("date")
             new_SearcheableFields = [
-                el for el in self.sercheable_field if el not in new_SearcheableFields]
+                el for el in self.SearcheableField if el not in new_SearcheableFields]
 
         df['SearcheableField'] = df[new_SearcheableFields].apply(
             lambda x: ' '.join(x.astype(str)), axis=1)

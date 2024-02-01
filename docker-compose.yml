@@ -6,7 +6,7 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 192.168.128.0/24
+        - subnet: 192.17.24.0/18
 
 services:
   np-solr-api:
@@ -65,8 +65,8 @@ services:
     container_name: np-zoo
     restart: always
     ports:
-      - 2180:8080
-      - 2181:2181
+      - 3180:8080
+      - 3181:2181
     environment:
       - JVMFLAGS=-Djute.maxbuffer=50000000
     volumes:

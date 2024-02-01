@@ -1,118 +1,286 @@
 """
-This script defines a Flask RESTful namespace for managing Solr collections. 
+This script defines a Flask RESTful namespace for managing Solr queries.
 
 Author: Lorena Calvo-Bartolomé
-Date: 27/03/2023
+Date: 13/04/2023
 """
 
-from flask_restx import Namespace, Resource, fields, reqparse
-from src.core.clients.ewb_solr_client import EWBSolrClient
+from flask_restx import Namespace, Resource, reqparse
+from src.core.clients.np_solr_client import NPSolrClient
 
 # ======================================================
-# Define namespace for managing collections
+# Define namespace for managing queries
 # ======================================================
-api = Namespace('Collections',
-                description='Generic Solr-related operations (collections creation and deletion, queries, etc.)')
+api = Namespace(
+    'Queries', description='Specfic Solr queries.')
 
 # ======================================================
 # Namespace variables
 # ======================================================
 # Create Solr client
-sc = EWBSolrClient(api.logger)
+sc = NPSolrClient(api.logger)
 
 # Define parsers to take inputs from user
-parser = reqparse.RequestParser()
-parser.add_argument('collection', help='Collection name')
+q1_parser = reqparse.RequestParser()
+q1_parser.add_argument(
+    'corpus_collection', help='Name of the corpus collection', required=True)
+q1_parser.add_argument(
+    'doc_id', help='ID of the document whose doc-topic distribution associated to a specific model is to be retrieved', required=True)
+q1_parser.add_argument(
+    'model_name', help='Name of the model reponsible for the creation of the doc-topic distribution to be retrieved', required=True)
 
-query_parser = reqparse.RequestParser()
-query_parser.add_argument(
-    'collection', help='Collection name on which you want to execute the query. This parameter is mandatory', required=True)
-query_parser.add_argument(
-    'q', help="Defines a query using standard query syntax. This parameter is mandatory", required=True)
-query_parser.add_argument(
-    'q.op', help="Specifies the default operator for query expressions, overriding the default operator specified in the Schema. Possible values are 'AND' or 'OR'.")
-query_parser.add_argument(
-    'fq', help="Applies a filter query to the search results")
-query_parser.add_argument(
-    'sort', help="Sorts the response to a query in either ascending or descending order based on the response’s score or another specified characteristic")
-query_parser.add_argument(
-    'start', help="Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content")
-query_parser.add_argument(
-    'rows', help="Controls how many rows of responses are displayed at a time (default value: 10)")
-query_parser.add_argument(
-    'fl', help="Limits the information included in a query response to a specified list of fields. The fields need to either be stored='true' or docValues='true'")
-query_parser.add_argument(
-    'df', help="Specifies a default field, overriding the definition of a default field in the Schema.")
+q2_parser = reqparse.RequestParser()
+q2_parser.add_argument(
+    'corpus_collection', help='Name of the corpus collection', required=True)
 
-# ======================================================
-# Methods
-# ======================================================
-@api.route('/createCollection/')
-class CreateCollection(Resource):
-    @api.doc(parser=parser)
-    def post(self):
-        args = parser.parse_args()
-        collection = args['collection']
-        try:
-            corpus, err = sc.create_collection(col_name=collection)
-            if err == 409:
-                return f"Collection {collection} already exists.", err
-            else:
-                return corpus, err
-        except Exception as e:
-            return str(e), 500
+q3_parser = reqparse.RequestParser()
+q3_parser.add_argument(
+    'collection', help='Name of the collection', required=True)
 
-@api.route('/deleteCollection/')
-class DeleteCollection(Resource):
-    @api.doc(parser=parser)
-    def post(self):
-        args = parser.parse_args()
-        collection = args['collection']
-        try:
-            sc.delete_collection(col_name=collection)
-            return f"Collection {collection} was deleted.", 200
-        except Exception as e:
-            return str(e), 500
+"""
+q5_parser = reqparse.RequestParser()
+q5_parser.add_argument(
+    'corpus_collection', help='Name of the corpus collection', required=True)
+q5_parser.add_argument(
+    'model_name', help='Name of the model reponsible for the creation of the doc-topic distribution', required=True)
+q5_parser.add_argument(
+    'doc_id', help="ID of the document whose similarity is going to be checked against all other documents in 'corpus_collection'", required=True)
+q5_parser.add_argument(
+    'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
+q5_parser.add_argument(
+    'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
+"""
+
+q6_parser = reqparse.RequestParser()
+q6_parser.add_argument(
+    'corpus_collection', help='Name of the corpus collection', required=True)
+q6_parser.add_argument(
+    'doc_id', help="ID of the document whose metadata is going to be retrieved'", required=True)
+
+q7_parser = reqparse.RequestParser()
+q7_parser.add_argument(
+    'corpus_collection', help='Name of the corpus collection', required=True)
+q7_parser.add_argument(
+    'string', help="String to be search in the SearcheableField field'", required=True)
+q7_parser.add_argument(
+    'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
+q7_parser.add_argument(
+    'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
+
+q8_parser = reqparse.RequestParser()
+q8_parser.add_argument(
+    'model_collection', help='Name of the model collection', required=True)
+q8_parser.add_argument(
+    'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
+q8_parser.add_argument(
+    'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
+
+q9_parser = reqparse.RequestParser()
+q9_parser.add_argument(
+    'corpus_collection', help='Name of the corpus collection', required=True)
+q9_parser.add_argument(
+    'model_name', help='Name of the model reponsible for the creation of the doc-topic distribution', required=True)
+q9_parser.add_argument(
+    'topic_id', help="ID of the topic whose top documents according to 'model_name' are being searched", required=True)
+q9_parser.add_argument(
+    'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
+q9_parser.add_argument(
+    'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
+
+q10_parser = reqparse.RequestParser()
+q10_parser.add_argument(
+    'model_collection', help='Name of the model collection', required=True)
+q10_parser.add_argument(
+    'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
+q10_parser.add_argument(
+    'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
+
+"""
+q14_parser = reqparse.RequestParser()
+q14_parser.add_argument(
+    'corpus_collection', help='Name of the corpus collection', required=True)
+q14_parser.add_argument(
+    'model_name', help='Name of the model reponsible for the creation of the doc-topic distribution', required=True)
+q14_parser.add_argument(
+    'text_to_infer', help="Text to be inferred", required=True)
+q14_parser.add_argument(
+    'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
+q14_parser.add_argument(
+    'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
+"""
 
 
-@api.route('/listCollections/')
-class ListCollections(Resource):
+@api.route('/getThetasDocById/')
+class getThetasDocById(Resource):
+    @api.doc(parser=q1_parser)
     def get(self):
+        args = q1_parser.parse_args()
+        corpus_collection = args['corpus_collection']
+        doc_id = args['doc_id']
+        model_name = args['model_name']
+
         try:
-            return sc.list_collections()
+            return sc.do_Q1(corpus_col=corpus_collection,
+                            doc_id=doc_id,
+                            model_name=model_name)
         except Exception as e:
             return str(e), 500
 
-@api.route('/query/')
-class Query(Resource):
-    @api.doc(parser=query_parser)
+
+@api.route('/getCorpusMetadataFields/')
+class getCorpusMetadataFields(Resource):
+    @api.doc(parser=q2_parser)
     def get(self):
-        args = query_parser.parse_args()
-        collection = args['collection']
-        q = args['q']
-        query_values = {
-            'q_op': args['q.op'],
-            'fq': args['fq'],
-            'sort': args['sort'],
-            'start': args['start'],
-            'rows': args['rows'],
-            'fl': args['fl'],
-            'df': args['df']
-        }
-
-        if q is None:
-            return "Query is mandatory", 400
-
-        if collection is None:
-            return "Collection is mandatory", 400
-
-        # Remove all key-value pairs with value of None
-        query_values = {k: v for k, v in query_values.items() if v is not None}
-
-        # Execute query
+        args = q2_parser.parse_args()
+        corpus_collection = args['corpus_collection']
         try:
-            code, results = sc.execute_query(
-                q=q, col_name=collection, **query_values)
-            return results.docs, code
+            return sc.do_Q2(corpus_col=corpus_collection)
         except Exception as e:
             return str(e), 500
+
+
+@api.route('/getNrDocsColl/')
+class getNrDocsColl(Resource):
+    @api.doc(parser=q3_parser)
+    def get(self):
+        args = q3_parser.parse_args()
+        collection = args['collection']
+        try:
+            return sc.do_Q3(col=collection)
+        except Exception as e:
+            return str(e), 500
+
+
+"""
+@api.route('/getDocsWithHighSimWithDocByid/')
+class getDocsWithHighSimWithDocByid(Resource):
+    @api.doc(parser=q5_parser)
+    def get(self):
+        args = q5_parser.parse_args()
+        corpus_collection = args['corpus_collection']
+        model_name = args['model_name']
+        doc_id = args['doc_id']
+        start = args['start']
+        rows = args['rows']
+
+        try:
+            return sc.do_Q5(corpus_col=corpus_collection,
+                            model_name=model_name,
+                            doc_id=doc_id,
+                            start=start,
+                            rows=rows)
+        except Exception as e:
+            return str(e), 500
+"""
+
+
+@api.route('/getMetadataDocById/')
+class getMetadataDocById(Resource):
+    @api.doc(parser=q6_parser)
+    def get(self):
+        args = q6_parser.parse_args()
+        corpus_collection = args['corpus_collection']
+        doc_id = args['doc_id']
+
+        try:
+            return sc.do_Q6(corpus_col=corpus_collection,
+                            doc_id=doc_id)
+        except Exception as e:
+            return str(e), 500
+
+
+@api.route('/getDocsWithString/')
+class getDocsWithString(Resource):
+    @api.doc(parser=q7_parser)
+    def get(self):
+        args = q7_parser.parse_args()
+        corpus_collection = args['corpus_collection']
+        string = args['string']
+        start = args['start']
+        rows = args['rows']
+
+        try:
+            return sc.do_Q7(corpus_col=corpus_collection,
+                            string=string,
+                            start=start,
+                            rows=rows)
+        except Exception as e:
+            return str(e), 500
+
+
+@api.route('/getTopicsLabels/')
+class getTopicsLabels(Resource):
+    @api.doc(parser=q8_parser)
+    def get(self):
+        args = q8_parser.parse_args()
+        model_collection = args['model_collection']
+        start = args['start']
+        rows = args['rows']
+
+        try:
+            return sc.do_Q8(model_col=model_collection,
+                            start=start,
+                            rows=rows)
+        except Exception as e:
+            return str(e), 500
+
+
+@api.route('/getTopicTopDocs/')
+class getTopicTopDocs(Resource):
+    @api.doc(parser=q9_parser)
+    def get(self):
+        args = q9_parser.parse_args()
+        corpus_collection = args['corpus_collection']
+        model_name = args['model_name']
+        topic_id = args['topic_id']
+        start = args['start']
+        rows = args['rows']
+
+        try:
+            return sc.do_Q9(corpus_col=corpus_collection,
+                            model_name=model_name,
+                            topic_id=topic_id,
+                            start=start,
+                            rows=rows)
+        except Exception as e:
+            return str(e), 500
+
+
+@api.route('/getModelInfo/')
+class getModelInfo(Resource):
+    @api.doc(parser=q10_parser)
+    def get(self):
+        args = q10_parser.parse_args()
+        model_collection = args['model_collection']
+        start = args['start']
+        rows = args['rows']
+        try:
+            return sc.do_Q10(model_col=model_collection,
+                             start=start,
+                             rows=rows,
+                             only_id=False)
+        except Exception as e:
+            return str(e), 500
+
+
+"""
+@api.route('/getDocsSimilarToFreeText/')
+class getDocsSimilarToFreeText(Resource):
+    @api.doc(parser=q14_parser)
+    def get(self):
+        args = q14_parser.parse_args()
+        corpus_collection = args['corpus_collection']
+        model_name = args['model_name']
+        text_to_infer = args['text_to_infer']
+        start = args['start']
+        rows = args['rows']
+
+        try:
+            return sc.do_Q14(corpus_col=corpus_collection,
+                            model_name=model_name,
+                            text_to_infer=text_to_infer,
+                            start=start,
+                            rows=rows)
+        except Exception as e:
+            return str(e), 500
+"""

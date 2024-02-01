@@ -30,7 +30,7 @@ parser2.add_argument(
 
 parser3 = reqparse.RequestParser()
 parser3.add_argument(
-    'corpus_col', help="Name of the corpus collection to list its EWBdisplayed fields")
+    'corpus_col', help="Name of the corpus collection to list its MetadataDisplayed fields")
 
 parser4 = reqparse.RequestParser()
 parser4.add_argument(
@@ -94,14 +94,14 @@ class listCorpusModels(Resource):
         except Exception as e:
             return str(e), 500
         
-@api.route('/listCorpusEWBdisplayed')
-class listCorpusEWBdisplayed(Resource):
+@api.route('/listCorpusMetadataDisplayed')
+class listCorpusMetadataDisplayed(Resource):
     @api.doc(parser=parser3)
     def get(self):
         args = parser3.parse_args()
         corpus_col = args['corpus_col']
         try:
-            SearcheableField_lst, code = sc.get_corpus_EWBdisplayed(corpus_col=corpus_col)
+            SearcheableField_lst, code = sc.get_corpus_MetadataDisplayed(corpus_col=corpus_col)
             return SearcheableField_lst, code
         except Exception as e:
             return str(e), 500

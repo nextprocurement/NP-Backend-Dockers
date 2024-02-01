@@ -129,55 +129,11 @@
   <field name="date" type="pdate" indexed="true" stored="true" multiValued="false" />
   <field name="nwords_per_doc" type="pint" indexed="true" stored="true" multiValued="false" />
   <field name="SearcheableField" type="text_general" indexed="true" stored="true" multiValued="false" />
+
+   <!-- NP fields  -->
+   <field name="summary" type="text_general" indexed="true" stored="true" multiValued="false" />
+   <field name="cpv" type="text_general" indexed="true" stored="true" multiValued="false" />
   
-  <!-- HFRI fields  -->
-  <field name="Summary" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="keywords" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="Budget" type="pfloat" indexed="true" stored="true" multiValued="false" />
-  <field name="Duration" type="pfloat" indexed="true" stored="true" multiValued="false" />
-  <field name="Call" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="field1" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="field2" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="ProjectID" type="pint" indexed="true" stored="true" multiValued="false" />
-  <field name="HostInstitutions" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="field1Code" type="pfloat" indexed="true" stored="true" multiValued="false" />
-  <field name="field1Name" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="GenderIP" type="text_general" indexed="true" stored="true" multiValued="false" />
-
-  <!-- Scopus fields  -->
-  <field name="issn" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="eIssn" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="article_number" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="volume" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="issueIdentifier" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="raw_text" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="doi" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="pubmed_id" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="subtype" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="subtypeDescription" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="creator" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="afid" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="affilname" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="affiliation_city" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="affiliation_country" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="author_count" type="pint" indexed="true" stored="true" multiValued="false" />
-  <field name="author_names" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="author_ids" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="author_ifids" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="coverDisplayDate" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="publicationName" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="source_id" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="aggregationType" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="pageRange" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="description" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="authkeywords" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="citedby_count" type="pint" indexed="true" stored="true" multiValued="false" />
-  <field name="openaccess" type="pint" indexed="true" stored="true" multiValued="false" />
-  <field name="freetoread" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="freetoreadLabel" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="fund_no" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="abstract" type="text_general" indexed="true" stored="true" multiValued="false" />
-
   <!-- Model fields  -->
   <field name="alphas" type="pfloat" indexed="true" stored="true" multiValued="false" />
   <field name="topic_entropy" type="pfloat" indexed="true" stored="true" multiValued="false" />

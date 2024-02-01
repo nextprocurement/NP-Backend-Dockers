@@ -343,7 +343,7 @@ class SolrClient(object):
         ----------
         col_name: str
             The name of the collection to create.
-        config: str, defaults to 'ewb_config'
+        config: str, defaults to '_default'
             The name of the config to use for the collection.
         nshards: int, defaults to 1
             The number of shards to use for the collection.

@@ -1,5 +1,5 @@
 """
-This module contains some auxiliary function for the management of EWB's entities.
+This module contains some auxiliary function for the management of NP backend's entities.
 
 Author: Lorena Calvo-Bartolomé
 Date: 12/04/2023
