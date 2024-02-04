@@ -110,30 +110,21 @@
          If you don't need it, consider removing it and the corresponding copyField directive.
     -->
 
+  <!-- Corpora fields  -->
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
   <field name="models" type="string" indexed="true" stored="true" multiValued="true" />
   <field name="SearcheableFields" type="string" indexed="true" stored="true" multiValued="true" />
   <field name="corpus_path" type="string" indexed="true" stored="true" required="false" multiValued="false" />
 
-  <!-- docValues are enabled by default for long type so we don't need to index the version field  -->
-  <field name="_version_" type="plong" indexed="false" stored="false" />
-
-  <!-- Added fields  -->
+  <!-- Corpus fields  -->
   <field name="corpus_name" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="rawtext" type="text_general" indexed="true" stored="true" multiValued="false" />
+  <field name="raw_text" type="text_general" indexed="true" stored="true" multiValued="false" />
   <field name="title" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="objective" type="text_general" indexed="true" stored="true" multiValued="false" />
   <field name="lemmas" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="euroSciVocCode" type="pint" indexed="true" stored="true" multiValued="true" />
-  <field name="startDate" type="pdate" indexed="true" stored="true" multiValued="false" />
   <field name="date" type="pdate" indexed="true" stored="true" multiValued="false" />
   <field name="nwords_per_doc" type="pint" indexed="true" stored="true" multiValued="false" />
   <field name="SearcheableField" type="text_general" indexed="true" stored="true" multiValued="false" />
 
-   <!-- NP fields  -->
-   <field name="summary" type="text_general" indexed="true" stored="true" multiValued="false" />
-   <field name="cpv" type="text_general" indexed="true" stored="true" multiValued="false" />
-  
   <!-- Model fields  -->
   <field name="alphas" type="pfloat" indexed="true" stored="true" multiValued="false" />
   <field name="topic_entropy" type="pfloat" indexed="true" stored="true" multiValued="false" />
@@ -144,6 +135,13 @@
   <field name="vocab" type="text_general" indexed="true" stored="true" multiValued="false" />
   <field name="tpc_labels" type="text_general" indexed="true" stored="true" multiValued="false" />
   <field name="usersIsRelevant" type="string" indexed="true" stored="true" multiValued="true" />
+
+  <!-- NP fields  -->
+  <field name="summary" type="text_general" indexed="true" stored="true" multiValued="false" />
+  <field name="cpv" type="text_general" indexed="true" stored="true" multiValued="false" />
+
+  <!-- docValues are enabled by default for long type so we don't need to index the version field  -->
+  <field name="_version_" type="plong" indexed="false" stored="false" />
 
   <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true" />
 
