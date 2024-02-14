@@ -7,7 +7,7 @@
 This multi-container application is orchestrated using a docker-compose script, connecting all services through the `np-net` network.
 
 
-![Python Dockers](https://github.com/Nemesis1303/NP-Backend-Dockers/static/Images/np_1.png)
+![Python Dockers](https://github.com/Nemesis1303/NP-Backend-Dockers/blob/main/static/Images/np_1.png)
 
 ## Main components
 
