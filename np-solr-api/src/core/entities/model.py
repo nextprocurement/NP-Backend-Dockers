@@ -77,7 +77,8 @@ class Model(object):
         # self.betas_max_sum = 10000
 
         # Get model information from TMmodel
-        self.tmmodel = TMmodel(self.path_to_model.joinpath("TMmodel"))
+        self.tmmodel = TMmodel(
+            self.path_to_model.joinpath("model_data/TMmodel"))
         self.alphas, self.betas, self.thetas, self.vocab, self.sims, self.coords = self.tmmodel.get_model_info_for_vis()
 
         return
@@ -290,7 +291,7 @@ class Model(object):
         action: str
     ) -> List[dict]:
         """Generates an update for the CORPUS_COL collection.
-        
+
         Parameters
         ----------
         id: int

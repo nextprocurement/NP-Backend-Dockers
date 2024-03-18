@@ -23,15 +23,15 @@ class Corpus(object):
     """
 
     def __init__(self,
-                 path_to_logical: pathlib.Path,
+                 path_to_raw: pathlib.Path,
                  logger=None,
                  config_file: str = "/config/config.cf") -> None:
         """Init method.
 
         Parameters
         ----------
-        path_to_logical: pathlib.Path
-            Path the logical corpus json file.
+        path_to_raw: pathlib.Path
+            Path the raw corpus file.
         logger : logging.Logger
             The logger object to log messages and errors.
         config_file: str
@@ -45,11 +45,12 @@ class Corpus(object):
             logging.basicConfig(level='INFO')
             self._logger = logging.getLogger('Entity Corpus')
 
-        with path_to_logical.open('r', encoding='utf8') as fin:
-            self._logical_corpus = json.load(fin)
-
-        self.path_to_logical = path_to_logical
-        self.name = path_to_logical.stem.lower()
+        if not path_to_raw.exists():
+            self._logger.error(
+                f"Path to raw data {path_to_raw} does not exist."
+            )
+        self.path_to_raw = path_to_raw
+        self.name = path_to_raw.stem.lower()
         self.fields = None
 
         # Read configuration from config file
@@ -58,15 +59,16 @@ class Corpus(object):
         self._logger.info(f"Sections {cf.sections()}")
         if self.name + "-config" in cf.sections():
             section = self.name + "-config"
-        elif path_to_logical.stem + "-config" in cf.sections():
-            section = path_to_logical.stem + "-config"
+        elif self.name + "-config" in cf.sections():
+            section = self.name + "-config"
         else:
             self._logger.error(
-                f"Logical corpus configuration {self.name} not found in config file.")
+                f"Corpus configuration {self.name} not found in config file.")
+        self.id_field = cf.get(section, "id_field")
         self.title_field = cf.get(section, "title_field")
         self.date_field = cf.get(section, "date_field")
-        # TODO: Update
-        self.MetadataDisplayed = cf.get(section, "MetadataDisplayed").split(",")
+        self.MetadataDisplayed = cf.get(
+            section, "MetadataDisplayed").split(",")
         self.SearcheableField = cf.get(section, "SearcheableField").split(",")
         if self.title_field in self.SearcheableField:
             self.SearcheableField.remove(self.title_field)
@@ -85,31 +87,26 @@ class Corpus(object):
         json_lst: list[dict]
             A list of dictionaries containing information about the corpus.
         """
-        if len(self._logical_corpus['Dtsets']) > 1:
-            self._logger.error(
-                f"Only models coming from a logical corpus associated with one raw dataset can be processed.")
-            return
-        else:
-            DtSet = self._logical_corpus['Dtsets'][0]
-            ddf = dd.read_parquet(DtSet['parquet']).fillna("")
-            self._logger.info(ddf.head())
-            self.corpus_path = DtSet['parquet']
-            idfld = DtSet["idfld"]
-            
-            if idfld in self.SearcheableField:
-                self.SearcheableField.remove(idfld)
-                self.SearcheableField.append("id")
-            self._logger.info(f"SearcheableField {self.SearcheableField}")
 
-            # Rename id-field to id, title-field to title and date-field to date
-            ddf = ddf.rename(
-                columns={idfld: "id",
-                         self.title_field: "title",
-                         self.date_field: "date"})
+        ddf = dd.read_parquet(self.path_to_raw).fillna("")
+        self._logger.info(ddf.head())
+
+        # If the id_field is in the SearcheableField, remove it and add the id field (new name for the id_field)
+        if self.id_field in self.SearcheableField:
+            self.SearcheableField.remove(self.id_field)
+            self.SearcheableField.append("id")
+        self._logger.info(f"SearcheableField {self.SearcheableField}")
+
+        # Rename id-field to id, title-field to title and date-field to date
+        ddf = ddf.rename(
+            columns={
+                self.id_field: "id",
+                self.title_field: "title",
+                self.date_field: "date"})
 
         with ProgressBar():
             df = ddf.compute(scheduler='processes')
-            
+
         self._logger.info(df.columns)
 
         # Get number of words per document based on the lemmas column
@@ -130,19 +127,19 @@ class Corpus(object):
         df = df.drop(['lemmas_'], axis=1)
         df['bow'] = df['bow'].apply(lambda x: ' '.join(
             [f'{word}|{count}' for word, count in x]).rstrip() if x else None)
-        
+
         self._logger.info("calcula el bow ok")
 
         # Convert dates information to the format required by Solr ( ISO_INSTANT, The ISO instant formatter that formats or parses an instant in UTC, such as '2011-12-03T10:15:30Z')
         df, cols = convert_datetime_to_strftime(df)
         df[cols] = df[cols].applymap(parseTimeINSTANT)
-        
+
         self._logger.info("calcula fecha ok")
 
         # Create SearcheableField by concatenating all the fields that are marked as SearcheableField in the config file
         df['SearcheableField'] = df[self.SearcheableField].apply(
             lambda x: ' '.join(x.astype(str)), axis=1)
-        
+
         self._logger.info("calcula searchable")
 
         # Save corpus fields
@@ -150,6 +147,8 @@ class Corpus(object):
 
         json_str = df.to_json(orient='records')
         json_lst = json.loads(json_str)
+        
+        self._logger.info(f"calcula json {json_str}")
 
         return json_lst
 
@@ -163,7 +162,7 @@ class Corpus(object):
         # TODO: Update
         fields_dict = [{"id": id,
                         "corpus_name": self.name,
-                        "corpus_path": self.path_to_logical.as_posix(),
+                        "corpus_path": self.path_to_raw.as_posix(),
                         "fields": self.fields,
                         "MetadataDisplayed": self.MetadataDisplayed,
                         "SearcheableFields": self.SearcheableField}]
@@ -189,13 +188,11 @@ class Corpus(object):
         action: str
     ):
 
-        DtSet = self._logical_corpus['Dtsets'][0]
-        ddf = dd.read_parquet(DtSet['parquet']).fillna("")
-        idfld = DtSet["idfld"]
+        ddf = dd.read_parquet(self.path_to_raw).fillna("")
 
         # Rename id-field to id, title-field to title and date-field to date
         ddf = ddf.rename(
-            columns={idfld: "id",
+            columns={self.id_field: "id",
                      self.title_field: "title",
                      self.date_field: "date"})
 

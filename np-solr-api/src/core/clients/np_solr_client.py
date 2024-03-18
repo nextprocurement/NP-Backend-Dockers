@@ -34,6 +34,7 @@ class NPSolrClient(SolrClient):
         self.batch_size = int(cf.get('restapi', 'batch_size'))
         self.corpus_col = cf.get('restapi', 'corpus_col')
         self.no_meta_fields = cf.get('restapi', 'no_meta_fields').split(",")
+        self.path_source = pathlib.Path(cf.get('restapi', 'path_source'))
         # TODO: Check if necessary
         self.thetas_max_sum = int(cf.get('restapi', 'thetas_max_sum'))
         # TODO: Check if necessary
@@ -53,18 +54,25 @@ class NPSolrClient(SolrClient):
     # ======================================================
 
     def index_corpus(self,
-                     corpus_logical_path: str) -> None:
-        """Given the string path of corpus file, it creates a Solr collection with such the stem name of the file (i.e., if we had '/data/source.Cordis.json' as corpus_logical_path, 'Cordis' would be the stem), reades the corpus file, extracts the raw information of each document, and sends a POST request to the Solr server to index the documents in batches.
+                     corpus_raw: str) -> None:
+        """
+        This method takes the name of a corpus raw file as input. It creates a Solr collection with the stem name of the file, which is obtained by converting the file name to lowercase (for example, if the input is 'Cordis', the stem would be 'cordis'). However, this process occurs only if the directory structure (self.path_source / corpus_raw / parquet) exists.
+
+        After creating the Solr collection, the method reads the corpus file, extracting the raw information of each document. Subsequently, it sends a POST request to the Solr server to index the documents in batches.
 
         Parameters
         ----------
-        corpus_logical_path : str
-            The path of the logical corpus file to be indexed.
+        corpus_raw : str
+            The string name of the corpus raw file to be indexed.
+
         """
 
         # 1. Get full path and stem of the logical corpus
-        corpus_to_index = pathlib.Path(corpus_logical_path)
+        corpus_to_index = self.path_source / (corpus_raw + ".parquet")
         corpus_logical_name = corpus_to_index.stem.lower()
+        
+        self.logger.info(f"Corpus to index: {corpus_to_index}")
+        self.logger.info(f"Corpus logical name: {corpus_logical_name}")
 
         # 2. Create collection
         corpus, err = self.create_collection(
@@ -80,6 +88,7 @@ class NPSolrClient(SolrClient):
         # 3. Add corpus collection to self.corpus_col. If Corpora has not been created already, create it
         corpus, err = self.create_collection(
             col_name=self.corpus_col, config=self.solr_config)
+        self.logger.info(f"-- -- Collection {self.corpus_col} successfully created.")
         if err == 409:
             self.logger.info(
                 f"-- -- Collection {self.corpus_col} already exists.")
@@ -105,7 +114,10 @@ class NPSolrClient(SolrClient):
         # 4. Create Corpus object and extract info from the corpus to index
         corpus = Corpus(corpus_to_index)
         json_docs = corpus.get_docs_raw_info()
+        self.logger.info(f"-- -- Corpus info extracted")
         corpus_col_upt = corpus.get_corpora_update(id=corpus_id)
+        self.logger.info(f"-- -- corpus_col_upt extracted")
+        self.logger.info(f"{corpus_col_upt}")
 
         # 5. Index corpus and its fiels in CORPUS_COL
         self.logger.info(
@@ -451,8 +463,8 @@ class NPSolrClient(SolrClient):
         """
 
         # 1. Get stem of the model folder
-        model_to_index = pathlib.Path(model_path)
-        model_name = pathlib.Path(model_to_index).stem.lower()
+        model_to_index =  self.path_source / model_path
+        model_name = model_to_index.stem.lower()
 
         # 2. Create collection
         _, err = self.create_collection(
@@ -543,8 +555,8 @@ class NPSolrClient(SolrClient):
         """
 
         # 1. Get stem of the model folder
-        model_to_index = pathlib.Path(model_path)
-        model_name = pathlib.Path(model_to_index).stem.lower()
+        model_to_index =  self.path_source / model_path
+        model_name = model_to_index.stem.lower()
 
         # 2. Delete model collection
         _, sc = self.delete_collection(col_name=model_name)

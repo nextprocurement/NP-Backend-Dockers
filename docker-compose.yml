@@ -2,11 +2,8 @@ version: "3.8"
 
 networks:
   np-net:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 192.17.24.0/18
+    name: ml4ds_net
+    external: true
 
 services:
   np-solr-api:
@@ -27,12 +24,25 @@ services:
       #- ./data/inference:/data/inference
       - ./np-config:/config
 
+  np-tools:
+    build: ./np-tools
+    container_name: np-tools
+    ports:
+      - 112:102
+    networks:
+      - np-net
+    volumes:
+      - ./data/source:/data/source
+      - ./np-config:/config
+
   solr-initializer:
     image: alpine
     container_name: np-solr-initializer
     restart: "no"
     entrypoint: |
       /bin/sh -c "chown 8983:8983 /solr"
+    networks:
+      - np-net
     volumes:
       - ./db/data/solr:/solr
 
@@ -43,7 +53,7 @@ services:
     volumes:
       - ./db/data/solr:/var/solr
       - ./solr-plugins/solr-ewb-jensen-shanon-distance-plugin/solr-js-plugin/target/solr-js-plugin-1.0.0.jar:/opt/solr/dist/plugins/solr-js-plugin-1.0.0.jar
-      #- ./solr-plugins/solr-ewb-sims/solr-sims-plugin/target/solr-sims-plugin-1.0.0.jar:/opt/solr/dist/plugins/solr-sims-plugin-1.0.0.jar
+      - ./solr-plugins/NP-solr-dist-plugin/np-solr-dist-plugin/target/NP-solr-dist-plugin.jar:/opt/solr/dist/plugins/NP-solr-dist-plugin.jar
       - ./solr-config:/opt/solr/server/solr
     ports:
       - 8984:8983

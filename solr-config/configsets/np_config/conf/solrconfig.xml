@@ -1104,7 +1104,7 @@
     -->
   
   <queryParser name="vp" class="com.ewb.VectorQParserPlugin" />
-  <!--<queryParser name="vs" class="com.ewb.VectorQSimParserPlugin" />-->
+  <queryParser name="vd" class="com.np_solr.VectorQSimParserPlugin" />
 
 
   <!-- Function Parsers
