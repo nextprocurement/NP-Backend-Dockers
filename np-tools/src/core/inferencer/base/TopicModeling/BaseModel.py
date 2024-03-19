@@ -132,6 +132,7 @@ class BaseModel:
         probs = self._model_predict(texts)
         # Save infer data
         self._save_infer_doctopics(probs)
+        return probs
 
     def save_model(self, path):
         with open(path, "wb") as f:

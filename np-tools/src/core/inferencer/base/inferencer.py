@@ -1,27 +1,22 @@
 """
-This module provides the class Inferencer, which consists of a wrapper for perfoming inference on a new unseen corpus. It contains specific implementations according to the trainer used for the generation of the topic model that is being used for inference.
+This module provides the class Inferencer, which consists of a wrapper for perfoming inference on a new unseen corpus. It contains specific implementations according to the trainer used for the generation of the topic model that is being used for inference. It is based in the inference process of the NP-Search-Tools project.
 
 Author: Lorena Calvo-Bartolomé
-Date: 19/05/2023
+Date: 18/03/2024
 """
 
-import argparse
 import json
 import logging
 import os
 import pathlib
-import sys
-from abc import abstractmethod
 from pathlib import Path
-from subprocess import check_output
 from typing import List
 
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import normalize
+from src.core.inferencer.base.TopicModeling.BaseModel import BaseModel
 from src.core.inferencer.base.utils import sum_up_to
-from src.core.inferencer.base.TopicModeling.BERTopic import BERTopic
-from src.core.inferencer.base.TopicModeling.MalletLDA import MalletLDA
 
 
 class Inferencer(object):
@@ -41,8 +36,10 @@ class Inferencer(object):
         }
     """
 
-    def __init__(self,
-                 logger: logging.Logger) -> None:
+    def __init__(
+        self,
+        logger: logging.Logger
+    ) -> None:
         """
         Initilization Method
 
@@ -122,20 +119,35 @@ class Inferencer(object):
 
     def predict(
         self,
-        model_type: str,
+        inferConfigFile: pathlib.Path,
         texts: List[str],
-        ):
-        
-        if model_type == "BERTopic":
-            model = BERTopic() # add parameters somehow
-        elif model_type == "Mallet":
-            model = MalletLDA()
-            
-        # TODO: Aquí habrá que instanciar el modelo o algo
-            
-        model.predict(texts)
-        
-        pass
+        max_sum: int = 1000,
+        thetas_thr: float = 3e-3
+    ):
+
+        with pathlib.Path(inferConfigFile).open('r', encoding='utf8') as fin:
+            self._inferConfig = json.load(fin)
+
+        # Check if the model to perform inference on exists
+        model_for_inf = Path(
+            self._inferConfig["model_for_infer_path"])
+        if not os.path.isdir(model_for_inf):
+            self._logger.error(
+                f'-- -- Provided path for the model to perform inference on path is not valid -- Stop')
+            return
+
+        # Load model
+        model = BaseModel.load_model(
+            path=model_for_inf.as_posix()
+        )
+
+        infer_thetas = model.predict(texts)
+        thetas32_rpr = super().get_final_thetas(
+            thetas32=infer_thetas,
+            thetas_thr=thetas_thr,
+            max_sum=max_sum)
+
+        return thetas32_rpr
 
     def get_final_thetas(
         self,
@@ -170,131 +182,5 @@ class Inferencer(object):
 
         # Transform thetas into string representation
         thetas32_rpr = self.transform_inference_output(thetas32, max_sum)
-
-        return thetas32_rpr
-
-
-class MalletInferencer(Inferencer):
-    def __init__(self, logger=None):
-
-        super().__init__(logger)
-
-    def predict(
-        self,
-        inferConfigFile: pathlib.Path,
-        mallet_path: pathlib.Path = None,
-        max_sum: int = 1000,
-        thetas_thr: float = 3e-3
-    ) -> List[dict]:
-        """
-        Performs topic inference utilizing a pretrained model according to Mallet
-
-        Parameters
-        ----------
-        inferConfigFile: pathlib.Path
-            Path to the configuration file for the inference process
-        mallet_path: pathlib.Path
-            Path to the mallet binary
-        max_sum: int
-            Maximum sum of the topic proportions when attaining their string representation
-        thetas_thr: float
-            Threshold for the inferred document-topic proportions (it should be the same used during training)
-
-        Returns
-        -------
-        List[dict]
-            List of dictionaries with the inferred topics
-        """
-
-        with pathlib.Path(inferConfigFile).open('r', encoding='utf8') as fin:
-            self._inferConfig = json.load(fin)
-
-        # Check if the model to perform inference on exists
-        model_for_inf = Path(
-            self._inferConfig["model_for_infer_path"])
-        if not os.path.isdir(model_for_inf):
-            self._logger.error(
-                f'-- -- Provided path for the model to perform inference on path is not valid -- Stop')
-            return
-
-        # A proper corpus should exist with the corresponding ipmortation pipe
-        path_pipe = Path(
-            self._inferConfig["model_for_infer_path"]).joinpath('modelFiles/import.pipe')
-        if not path_pipe.is_file():
-            self._logger.error(
-                '-- Inference error. Importation pipeline not found')
-            return
-
-        # Holdout corpus should exist
-        holdout_corpus = Path(
-            self._inferConfig['infer_path']).joinpath("corpus.txt")
-        if not holdout_corpus.is_file():
-            self._logger.error(
-                '-- Inference error. File to perform the inference on not found')
-            return
-
-        # Get inferencer
-        inferencer = Path(
-            self._inferConfig['model_for_infer_path']).joinpath("modelFiles/inferencer.mallet")
-
-        # The following files will be generated in the same folder
-        corpus_mallet_inf = \
-            holdout_corpus.parent.joinpath('corpus_inf.mallet')
-        doc_topics_file = holdout_corpus.parent.joinpath('doc-topics-inf.txt')
-
-        # Get Mallet Path
-        if mallet_path:
-            mallet_path = Path(self.mallet_path)
-        elif 'TMparam' in self._inferConfig.keys() and 'mallet_path' in self._inferConfig['TMparam'].keys():
-            mallet_path = Path(self._inferConfig['TMparam']['mallet_path'])
-        if not mallet_path.is_file():
-            self._logger.error(
-                f'-- -- Provided mallet path is not valid -- Stop')
-            return
-
-        # Import data to mallet
-        self._logger.info('-- Inference: Mallet Data Import')
-
-        cmd = mallet_path.as_posix() + \
-            ' import-file --use-pipe-from %s --input %s --output %s'
-        cmd = cmd % (path_pipe, holdout_corpus, corpus_mallet_inf)
-
-        try:
-            self._logger.info(f'-- Running command {cmd}')
-            check_output(args=cmd, shell=True)
-        except:
-            self._logger.error(
-                '-- Mallet failed to import data. Revise command')
-            return
-
-        # Get topic proportions
-        self._logger.info('-- Inference: Inferring Topic Proportions')
-        num_iterations = 100
-        doc_topic_thr = 0
-
-        cmd = mallet_path.as_posix() + \
-            ' infer-topics --inferencer %s --input %s --output-doc-topics %s ' + \
-            ' --doc-topics-threshold ' + str(doc_topic_thr) + \
-            ' --num-iterations ' + str(num_iterations)
-        cmd = cmd % (inferencer, corpus_mallet_inf, doc_topics_file)
-
-        try:
-            self._logger.info(f'-- Running command {cmd}')
-            check_output(args=cmd, shell=True)
-        except:
-            self._logger.error('-- Mallet inference failed. Revise command')
-            return
-
-        # Get inferred thetas
-        ntopics = \
-            self._inferConfig['TMparam']['ntopics']
-        cols = [k for k in np.arange(2, ntopics + 2)]
-        thetas32 = np.loadtxt(doc_topics_file, delimiter='\t',
-                              dtype=np.float32, usecols=cols)
-
-        thetas32_rpr = super().get_final_thetas(
-            thetas32=thetas32,
-            thetas_thr=thetas_thr,
-            max_sum=max_sum)
 
         return thetas32_rpr
