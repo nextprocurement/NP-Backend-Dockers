@@ -195,10 +195,10 @@ class Model(object):
         # Get ids of documents kept in the tr corpus
         if tr_config["trainer"].lower() == "mallet":
             def process_line(line):
-                id_ = line.rsplit(' 0 ')[0].strip()
+                id_ = line.rsplit('\t0\t')[0].strip()
                 id_ = int(id_.strip('"'))
                 return id_
-            with open(self.path_to_model.joinpath("corpus.txt"), encoding="utf-8") as file:
+            with open(self.path_to_model.joinpath("train_data").joinpath("corpus.txt"), encoding="utf-8") as file:
                 ids_corpus = [process_line(line) for line in file]
         elif tr_config["trainer"].lower() == "prodlda" or \
                 tr_config["trainer"].lower() == "ctm":
@@ -244,7 +244,7 @@ class Model(object):
             # Get similarities string representation
             self._logger.info("Attaining sims rpr...")
 
-            with open(self.path_to_model.joinpath("TMmodel").joinpath('distances.txt'), 'r') as f:
+            with open(self.path_to_model.joinpath("model_data").joinpath("TMmodel").joinpath('distances.txt'), 'r') as f:
                 sim_rpr = [line.strip() for line in f]
             self._logger.info(
                 "Thetas and sims attained. Creating dataframe...")

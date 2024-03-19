@@ -1372,3 +1372,26 @@ class NPSolrClient(SolrClient):
             return
 
         return results.docs, sc
+    
+    def do_Q20(
+        self,
+        corpus_col:str,
+        model_name:str,
+        search_word:str,
+        start,
+        rows
+    ) -> Union[dict,int]:
+        
+        # 0. Convert corpus and model names to lowercase
+        corpus_col = corpus_col.lower()
+        model_name = model_name.lower()
+        
+        # 1. Check that corpus_col is indeed a corpus collection
+        if not self.check_is_corpus(corpus_col):
+            return
+        
+        # 2. Check that corpus_col has the model_name field
+        if not self.check_corpus_has_model(corpus_col, model_name):
+            return
+
+        # 3. Lemmatize and get embedding from search_word

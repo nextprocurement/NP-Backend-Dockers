@@ -128,19 +128,13 @@ class Corpus(object):
         df['bow'] = df['bow'].apply(lambda x: ' '.join(
             [f'{word}|{count}' for word, count in x]).rstrip() if x else None)
 
-        self._logger.info("calcula el bow ok")
-
         # Convert dates information to the format required by Solr ( ISO_INSTANT, The ISO instant formatter that formats or parses an instant in UTC, such as '2011-12-03T10:15:30Z')
         df, cols = convert_datetime_to_strftime(df)
         df[cols] = df[cols].applymap(parseTimeINSTANT)
 
-        self._logger.info("calcula fecha ok")
-
         # Create SearcheableField by concatenating all the fields that are marked as SearcheableField in the config file
         df['SearcheableField'] = df[self.SearcheableField].apply(
             lambda x: ' '.join(x.astype(str)), axis=1)
-
-        self._logger.info("calcula searchable")
 
         # Save corpus fields
         self.fields = df.columns.tolist()
@@ -148,8 +142,6 @@ class Corpus(object):
         json_str = df.to_json(orient='records')
         json_lst = json.loads(json_str)
         
-        self._logger.info(f"calcula json {json_str}")
-
         return json_lst
 
     def get_corpora_update(

@@ -54,11 +54,11 @@ def main():
     logger.info(f"Sims obtained")
 
     def process_line(line):
-        id_ = line.rsplit(' 0 ')[0].strip()
+        id_ = line.rsplit('\t0\t')[0].strip()
         id_ = int(id_.strip('"'))
         return id_
 
-    with open(pathlib.Path(args.path_tmmodel).parent.joinpath("corpus.txt"), encoding="utf-8") as file:
+    with open(pathlib.Path(args.path_tmmodel).parent.parent.joinpath("train_data").joinpath("corpus.txt"), encoding="utf-8") as file:
         ids_corpus = [process_line(line) for line in file]
     logger.info(f"Ids obtained")
     logger.info(f"Starting similarities representation...")
