@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 from dask.diagnostics import ProgressBar
 from src.core.entities.tm_model import TMmodel
-# from tm_model import TMmodel
+#from tm_model import TMmodel
 from src.core.entities.utils import sum_up_to
 # from utils import sum_up_to
 
@@ -79,7 +79,7 @@ class Model(object):
         # Get model information from TMmodel
         self.tmmodel = TMmodel(
             self.path_to_model.joinpath("model_data/TMmodel"))
-        self.alphas, self.betas, self.thetas, self.vocab, self.sims, self.coords = self.tmmodel.get_model_info_for_vis()
+        self.alphas, self.betas, self.thetas, self.vocab, self.sims, self.coords, self.tpc_embs = self.tmmodel.get_model_info_for_vis()
 
         return
 
@@ -98,6 +98,7 @@ class Model(object):
             tr_config = json.load(fin)
 
         # Get model information as dataframe, where each row is a topic
+        self._logger.info("Lllega aqui.")
         df, vocab_id2w, vocab = self.tmmodel.to_dataframe()
         df = df.apply(pd.Series.explode)
         df.reset_index(drop=True)
@@ -156,6 +157,16 @@ class Model(object):
 
         # Get topic coordinates in cluster space
         df["coords"] = self.coords
+                
+        # Get topic embeddings
+        def get_topic_embeddings(vector):
+            
+            repr = " ".join(
+                [f"{idx}:{val}" for idx, val in enumerate(vector[0])]).rstrip()
+            
+            return repr
+            
+        df["tpc_embeddings"] = df["tpc_embeddings"].apply(get_topic_embeddings)
 
         json_str = df.to_json(orient='records')
         json_lst = json.loads(json_str)
@@ -314,13 +325,13 @@ class Model(object):
         return json_lst
 
 
-# if __name__ == '__main__':
-#    model = Model(pathlib.Path(
-#       "/export/data_ml4ds/IntelComp/EWB/data/source/HFRI-30"))
-    # json_lst = model.get_model_info_update(action='set')
-    # pos = model.get_topic_pos()
-    # print(json_lst[0])
-#    df = model.get_model_info()
-    # print(df[0].keys())
-    # upt = model.get_corpora_model_update()
-    # print(upt)
+if __name__ == '__main__':
+    model = Model(pathlib.Path(
+        "/export/usuarios_ml4ds/lbartolome/NextProcurement/NP-Backend-Dockers/data/source/Mallet_5_topics"))
+    #json_lst = model.get_model_info_update(action='set')
+    #pos = model.get_topic_pos()
+    #print(json_lst[0])
+    df = model.get_model_info()
+    #print(df[0].keys())
+    #upt = model.get_corpora_model_update()
+    #print(upt)

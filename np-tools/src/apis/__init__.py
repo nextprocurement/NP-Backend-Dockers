@@ -10,4 +10,4 @@ api = Api(
 )
 
 api.add_namespace(ns1, path='/embedder')
-api.add_namespace(ns2, path='/inferencer')
+#api.add_namespace(ns2, path='/inferencer')

@@ -49,6 +49,7 @@ class TMmodel(object):
     _topic_coherence = None
     _ndocs_active = None
     _tpc_descriptions = None
+    _tpc_embeddings = None
     _tpc_labels = None
     _vocab_w2id = None
     _vocab_id2w = None
@@ -144,6 +145,7 @@ class TMmodel(object):
                                   for el in self.get_tpc_word_descriptions()]
         self.calculate_topic_coherence()  # cohrs_aux
         self._tpc_labels = [el[1] for el in self.get_tpc_labels(labels)]
+        #self.get_tpc_word_descriptions_embeddings()
         self._calculate_sims()
 
         # We are ready to save all variables in the model
@@ -180,6 +182,8 @@ class TMmodel(object):
             fout.write('\n'.join(self._tpc_descriptions))
         with self._TMfolder.joinpath('tpc_labels.txt').open('w', encoding='utf8') as fout:
             fout.write('\n'.join(self._tpc_labels))
+        np.save(self._TMfolder.joinpath('tpc_embeddings.npy'), np.array(
+            self._tpc_embeddings, dtype=object), allow_pickle=True)
 
         # Generate also pyLDAvisualization
         # pyLDAvis currently raises some Deprecation warnings
@@ -487,9 +491,10 @@ class TMmodel(object):
         self._load_thetas()
         self._load_vocab()
         self._load_sims()
+        self.load_tpc_word_descriptions_embeddings()
         self.load_tpc_coords()
 
-        return self._alphas, self._betas, self._thetas, self._vocab, self._sims, self._coords
+        return self._alphas, self._betas, self._thetas, self._vocab, self._sims, self._coords, self._tpc_embeddings
 
     def get_tpc_word_descriptions(self, n_words=15, tfidf=True, tpc=None):
         """returns the chemical description of topics
@@ -537,54 +542,83 @@ class TMmodel(object):
             with self._TMfolder.joinpath('tpc_descriptions.txt').open('r', encoding='utf8') as fin:
                 self._tpc_descriptions = [el.strip() for el in fin.readlines()]
 
-    def get_tpc_labels(self, labels=None, use_cuda=True):
-        """returns the labels of the topics in the model
+    # def get_tpc_labels(self):
+    #     """returns the labels of the topics in the model
 
-        Parameters
-        ----------
-        labels: list
-            List of labels for automatic topic labeling
-        use_cuda: bool
-            If True, use cuda.
+    #     Parameters
+    #     ----------
+    #     labels: list
+    #         List of labels for automatic topic labeling
+    #     use_cuda: bool
+    #         If True, use cuda.
 
-        Returns
-        -------
-        tpc_labels: list of tuples
-            Each element is a a term (topic_id, "label for topic topic_id")                    
-        """
-        if not labels:
-            return [(i, "NA") for i, p in enumerate(self._tpc_descriptions)]
+    #     Returns
+    #     -------
+    #     tpc_labels: list of tuples
+    #         Each element is a a term (topic_id, "label for topic topic_id")                    
+    #     """
 
-        if use_cuda:
-            import torch
-            if torch.cuda.is_available():
-                device = 0
-                self._logger.info("-- -- CUDA available: GPU will be used")
-            else:
-                device = -1
-                self._logger.warning(
-                    "-- -- 'use_cuda' set to True when cuda is unavailable."
-                    "Make sure CUDA is available or set 'use_cuda=False'"
-                )
-                self._logger.info(
-                    "-- -- CUDA unavailable: GPU will not be used")
-        else:
-            device = -1
-            self._logger.info("-- -- CUDA unavailable: GPU will not be used")
+    #     # Load tpc descriptions
+    #     self.load_tpc_descriptions()
 
-        from transformers import pipeline
-        classifier = pipeline("zero-shot-classification",
-                              model="facebook/bart-large-mnli",
-                              device=device)
-        predictions = classifier(self._tpc_descriptions, labels)
-        predictions = [(i, p["labels"][0]) for i, p in enumerate(predictions)]
-        return predictions
+    #     # Create a topic labeller object
+    #     tl = TopicLabeller(model="gpt-4")
+
+    #     # Get labels
+    #     aux = [string.replace("'", '"') for string in self._tpc_descriptions]
+    #     labels = tl.get_labels(aux)
+    #     labels_format = [(i, p) for i, p in enumerate(labels)]
+
+    #     return labels_format
 
     def load_tpc_labels(self):
         if self._tpc_labels is None:
             with self._TMfolder.joinpath('tpc_labels.txt').open('r', encoding='utf8') as fin:
                 self._tpc_labels = [el.strip() for el in fin.readlines()]
 
+    # def get_tpc_word_descriptions_embeddings(self):
+
+    #     # Load topc descriptions
+    #     self.load_tpc_descriptions()
+
+    #     # Create embedder
+    #     emb = Embedder()
+
+    #     embed_from = [
+    #         el.split(", ") for el in self._tpc_descriptions
+    #     ]
+
+    #     corpus_path = self._TMfolder.parent.parent.joinpath(
+    #         'train_data/corpus.txt')
+    #     model_path = corpus_path.parent / f"model_w2v_{corpus_path.stem}.model"
+
+    #     if model_path.exists():
+    #         tpc_embeddings = emb.infer_embeddings(
+    #             embed_from=embed_from,
+    #             method="word2vec",
+    #             do_train_w2vec=False,
+    #             model_path=model_path,
+    #             corpus_file=self._TMfolder.parent.parent.joinpath(
+    #                 'train_data/corpus.txt')
+    #         )
+    #     else:
+    #         tpc_embeddings = emb.infer_embeddings(
+    #             embed_from=embed_from,
+    #             method="word2vec",
+    #             do_train_w2vec=True,
+    #             corpus_file=self._TMfolder.parent.parent.joinpath(
+    #                 'train_data/corpus.txt')
+    #         )
+
+    #     return tpc_embeddings
+
+    def load_tpc_word_descriptions_embeddings(self):
+        self._logger.info("-- -- Loading topic word descriptions embeddings")
+        if self._tpc_embeddings is None:
+            self._tpc_embeddings = np.load(self._TMfolder.joinpath(
+                'tpc_embeddings.npy'), allow_pickle=True)
+    
+    
     def load_tpc_coords(self):
         if self._coords is None:
             with self._TMfolder.joinpath('tpc_coords.txt').open('r', encoding='utf8') as fin:
@@ -884,6 +918,10 @@ class TMmodel(object):
         self._load_ndocs_active()
         self._load_vocab()
         self._load_vocab_dicts()
+        self.load_tpc_word_descriptions_embeddings()
+        
+        self._logger.info(self._betas)
+        self._logger.info(type(self._betas))
 
         data = {
             "betas": [self._betas],
@@ -894,6 +932,8 @@ class TMmodel(object):
             "ndocs_active": [self._ndocs_active],
             "tpc_descriptions": [self._tpc_descriptions],
             "tpc_labels": [self._tpc_labels],
+            "tpc_embeddings": [self._tpc_embeddings]
         }
+        
         df = pd.DataFrame(data)
         return df, self._vocab_id2w, self._vocab

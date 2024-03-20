@@ -127,6 +127,15 @@ class Corpus(object):
         df = df.drop(['lemmas_'], axis=1)
         df['bow'] = df['bow'].apply(lambda x: ' '.join(
             [f'{word}|{count}' for word, count in x]).rstrip() if x else None)
+        
+        # Ger embeddings of the documents
+        def get_str_embeddings(vector):
+            repr = " ".join(
+                [f"{idx}:{val}" for idx, val in enumerate(vector.split())]).rstrip()
+
+            return repr
+        
+        df["embeddings"] = df["embeddings"].apply(get_str_embeddings)
 
         # Convert dates information to the format required by Solr ( ISO_INSTANT, The ISO instant formatter that formats or parses an instant in UTC, such as '2011-12-03T10:15:30Z')
         df, cols = convert_datetime_to_strftime(df)

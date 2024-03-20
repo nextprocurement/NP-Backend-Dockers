@@ -369,6 +369,12 @@
 
   <field name="bow" type="VectorField" indexed="true" termOffsets="true" stored="true"
     termPositions="true" termVectors="true" multiValued="false" />
+  
+  <field name="tpc_embeddings" type="VectorFloatField" indexed="true" termOffsets="true" stored="true"
+    termPositions="true" termVectors="true" multiValued="false" />
+  
+  <field name="embeddings" type="VectorFloatField" indexed="true" termOffsets="true" stored="true"
+    termPositions="true" termVectors="true" multiValued="false" />
 
   <field name="userRelevantTopics" type="VectorField" indexed="true" termOffsets="true" stored="true"
     termPositions="true" termVectors="true" multiValued="false" />

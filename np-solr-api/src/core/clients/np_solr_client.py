@@ -13,7 +13,9 @@ import re
 import time
 import pandas as pd
 from typing import List, Union
-# from src.core.clients.external.np_inferencer_client import NPInferencerClient #TODO:Add and update if necessary
+# from src.core.clients.external.np_inferencer_client import NPInferencerClient 
+from src.core.clients.external.np_tools_client import NPToolsClient
+# #TODO:Add and update if necessary
 from src.core.clients.base.solr_client import SolrClient
 from src.core.entities.corpus import Corpus
 from src.core.entities.model import Model
@@ -46,6 +48,7 @@ class NPSolrClient(SolrClient):
         # Create InferencerClient to send requests to the Inferencer API
         # TODO: Uncomment and update if necessary
         # self.inferencer = NPInferencerClient(logger)
+        self.nptooler = NPToolsClient(logger)
 
         return
 
@@ -1378,8 +1381,10 @@ class NPSolrClient(SolrClient):
         corpus_col:str,
         model_name:str,
         search_word:str,
-        start,
-        rows
+        start:int,
+        rows:int,
+        embedding_model:str = "word2vec",
+        lang:str = "es",
     ) -> Union[dict,int]:
         
         # 0. Convert corpus and model names to lowercase
@@ -1395,3 +1400,14 @@ class NPSolrClient(SolrClient):
             return
 
         # 3. Lemmatize and get embedding from search_word
+        resp = self.nptooler.get_word_embedding(
+            word_to_embed=search_word,
+            embedding_model=embedding_model,
+            model_for_embedding=model_name,
+            lang=lang
+        )
+
+        if resp.status_code != 200:
+            self.logger.error(
+                f"-- -- Error getting embeddings from {search_word} while executing query Q20. Aborting operation...")
+            return

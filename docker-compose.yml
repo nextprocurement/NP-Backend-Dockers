@@ -13,6 +13,7 @@ services:
       - 92:82
     environment:
       SOLR_URL: http://solr:8983
+      NP_TOOLS_URL: http://np-tools:102
       #INFERENCE_URL: http://np-inferencer:90
     depends_on:
       - solr
