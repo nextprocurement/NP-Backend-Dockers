@@ -162,7 +162,7 @@ class Model(object):
         def get_topic_embeddings(vector):
             
             repr = " ".join(
-                [f"{idx}:{val}" for idx, val in enumerate(vector[0])]).rstrip()
+                [f"e{idx}|{val}" for idx, val in enumerate(vector[0])]).rstrip()
             
             return repr
             

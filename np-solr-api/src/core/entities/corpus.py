@@ -131,7 +131,7 @@ class Corpus(object):
         # Ger embeddings of the documents
         def get_str_embeddings(vector):
             repr = " ".join(
-                [f"{idx}:{val}" for idx, val in enumerate(vector.split())]).rstrip()
+                [f"e{idx}|{val}" for idx, val in enumerate(vector.split())]).rstrip()
 
             return repr
         
