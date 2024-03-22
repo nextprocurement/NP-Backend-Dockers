@@ -1411,3 +1411,10 @@ class NPSolrClient(SolrClient):
             self.logger.error(
                 f"-- -- Error getting embeddings from {search_word} while executing query Q20. Aborting operation...")
             return
+        
+        # 4. Calculate cosine similarity between the embedding of search_word and the embeddings of the documents in the corpus
+        distance = "cosine"
+        
+        # 5. Find the topic that is most similar to the search_word
+        
+        # 6. Return the id of the topic and the similarity score

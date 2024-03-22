@@ -1,7 +1,7 @@
 from flask_restx import Api
 
 from .ns_embedder import api as ns1
-from .ns_inferencer import api as ns2
+#from .ns_inferencer import api as ns2
 
 api = Api(
     title="NP Tools API",

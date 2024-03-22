@@ -79,11 +79,14 @@ class getEmbedding(Resource):
             try:
                 model_path = pathlib.Path(
                     "data/source") / (args["model"])/("train_data") / ("model_w2v_corpus.model")
+                logger.info(f"Model path: {model_path.as_posix()}")
                 embeddings = embedder_manager.infer_embeddings(
                     embed_from=text_to_embed,
                     method=args["embedding_model"],
                     model_path=model_path.as_posix()
                 )
+                logger.info(f"Embeddings generated successfully:{embeddings}")
+                logger.info(f"Type of embeddings generated: {type(embeddings)}")
                 data = {
                     "embedding": embeddings,
                     "status_response": "Embeddings generated successfully"

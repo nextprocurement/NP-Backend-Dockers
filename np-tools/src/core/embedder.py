@@ -209,15 +209,19 @@ class Embedder(object):
 
             if model_path is not None:
                 model = Word2Vec.load(model_path.as_posix())
+                self.logger.info(f"Word2Vec model loaded from {model_path}")
             # If we are just getting the embedding of one word, return the embedding directly
             if len(embed_from) == 1 and len(embed_from[0]) == 1:
+                self.logger.info(f"Getting embedding for word {embed_from[0][0]}")
                 return model.wv[embed_from[0][0]]
             # If we are getting the embedding of one sentence, return the average of the embeddings of the words in the sentence
             elif len(embed_from) == 1:
+                self.logger.info(f"Getting embedding for sentence {embed_from[0]}")
                 return self._get_sentence_embedding(
                         sent=embed_from[0], w2vec_model= model.wv, method=method)
             # If we are getting the embeddings of multiple sentences, return the embeddings of each sentence
             else:
+                self.logger.info(f"Getting embeddings for {len(embed_from)} sentences")
                 return [
                     self._get_sentence_embedding(
                         sent=sent, w2vec_model= model.wv, method=method)

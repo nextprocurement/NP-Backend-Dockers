@@ -111,7 +111,7 @@ class Queries(object):
         # # Get the top documents for a given topic in a model collection
         # http://localhost:8983/solr/cordis/select?indent=true&q.op=OR&q=%7B!term%20f%3D{model}%7Dt{topic_id}&useParams=
         # http://localhost:8983/solr/#/{corpus_collection}/query?q=*:*&q.op=OR&indent=true&fl=doctpc_{model_name},%20nwords_per_doc&sort=payload(doctpc_{model_name},t{topic_id})%20desc,%20nwords_per_doc%20desc&useParams=
-        #http://localhost:8983/solr/#/np_all/query?q=*:*&q.op=OR&indent=true&fl=doctpc_np_5tpcs,%20nwords_per_doc&sort=payload(doctpc_np_5tpcs,t0)%20desc,%20nwords_per_doc%20desc&useParams=
+        # http://localhost:8983/solr/#/np_all/query?q=*:*&q.op=OR&indent=true&fl=doctpc_np_5tpcs,%20nwords_per_doc&sort=payload(doctpc_np_5tpcs,t0)%20desc,%20nwords_per_doc%20desc&useParams=
         # ================================================================
         self.Q9 = {
             'q': '*:*',
@@ -119,7 +119,7 @@ class Queries(object):
             'fl': 'payload(doctpc_{},t{}), nwords_per_doc, id',
             'start': '{}',
             'rows': '{}'
-        }#doctpc_{}
+        }  # doctpc_{}
 
         # ================================================================
         # # Q10: getModelInfo
@@ -146,7 +146,7 @@ class Queries(object):
         # # Q15: getLemmasDocById  ##################################################################
         # # Get lemmas of a selected document in a corpus collection
         # http://localhost:8983/solr/{col}/select?fl=lemmas&q=id:{id}
-        #http://localhost:8983/solr/np_all/select?fl=lemmas&q=id:505302
+        # http://localhost:8983/solr/np_all/select?fl=lemmas&q=id:505302
         # ================================================================
         self.Q15 = {
             'q': 'id:{}',
@@ -154,7 +154,7 @@ class Queries(object):
             'start': '{}',
             'rows': '{}'
         }
-        
+
         self.Q18 = {
             'q': 'id:{}',
             'fl': 'payload(bow,{})',
@@ -164,10 +164,14 @@ class Queries(object):
 
         # If adding a new one, start numberation at 20
         # ================================================================
-        # # Q20:   ##################################################################
-        
-        
-        
+        # # Q20: getSimWithTpcEmbeddings ##################################################################
+        self.Q20 = {
+            'q': "{{!vd f=tpc_embeddings vector=\"{}\" distance=\"{}\"}}",
+            'fl': "id,score",
+            'start': '{}',
+            'rows': '{}'
+        }
+
     def customize_Q1(self,
                      id: str,
                      model_name: str) -> dict:
@@ -374,7 +378,7 @@ class Queries(object):
             'start': self.Q9['start'].format(start),
             'rows': self.Q9['rows'].format(rows),
         }
-        
+
         return custom_q9
 
     def customize_Q10(self,
@@ -468,10 +472,9 @@ class Queries(object):
     def customize_Q18(self,
                       ids: str,
                       words: str,
-                      start:str,
+                      start: str,
                       rows: str) -> dict:
-    
-        
+
         custom_q18 = {
             'q':  self.Q18['q'].format(' & id:'.join(ids)),
             'fl': 'id, ' + ', '.join(self.Q18['fl'].format(word) for word in words),
@@ -480,3 +483,34 @@ class Queries(object):
         }
 
         return custom_q18
+
+    def customize_Q20(self,
+                      wd_embeddings: str,
+                      distance: str,
+                      start: str,
+                      rows: str) -> dict:
+        """Customizes query Q20 'getSimWithTpcEmbeddings'
+
+        Parameters
+        ----------
+        wd_embeddings: str
+            Word embeddings of the user's free word.
+        distance: str
+            Distance metric to be used.
+        start: str
+            Start value.
+        rows: str
+            Number of rows to retrieve.
+
+        Returns
+        -------
+        custom_q5: dict
+            Customized query Q5.
+        """
+
+        custom_q20 = {
+            'q': self.Q20['q'].format(wd_embeddings, distance),
+            'start': self.Q20['start'].format(start),
+            'rows': self.Q20['rows'].format(rows),
+        }
+        return custom_q20
