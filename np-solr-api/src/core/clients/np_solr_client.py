@@ -1114,7 +1114,7 @@ class NPSolrClient(SolrClient):
 
         sc, results = self.execute_query(
             q=q9['q'], col_name=corpus_col, **params)
-
+        
         if sc != 200:
             self.logger.error(
                 f"-- -- Error executing query Q9. Aborting operation...")
@@ -1127,53 +1127,7 @@ class NPSolrClient(SolrClient):
                 dict["topic_relevance"] = dict.pop(proportion_key)*0.1
             dict["num_words_per_doc"] = dict.pop("nwords_per_doc")
 
-        # 7. Get the topic's top words
-        words, sc = self.do_Q10(
-            model_col=model_name,
-            start=topic_id,
-            rows=1,
-            only_id=False)
-        if sc != 200:
-            self.logger.error(
-                f"-- -- Error executing query Q10 when using in Q9. Aborting operation...")
-            return
-
-        dict_bow, sc = self.do_Q18(
-            corpus_col=corpus_col,
-            ids=",".join([d['id'] for d in results.docs]),
-            words=",".join(words[0]['tpc_descriptions'].split(", ")),
-            start=start,
-            rows=rows)
-
-        # 7. Merge results
-        def replace_payload_keys(dictionary):
-            new_dict = {}
-            for key, value in dictionary.items():
-                match = re.match(r'payload\(bow,(\w+)\)', key)
-                if match:
-                    new_key = match.group(1)
-                else:
-                    new_key = key
-                new_dict[new_key] = value
-            return new_dict
-
-        merged_tpcs = []
-        for d1 in results.docs:
-            id_value = d1['id']
-
-            # Find the corresponding dictionary in dict2
-            d2 = next(item for item in dict_bow if item["id"] == id_value)
-
-            new_dict = {
-                "id": id_value,
-                "topic_relevance": d1.get("topic_relevance", 0),
-                "num_words_per_doc": d1.get("num_words_per_doc", 0),
-                "counts": replace_payload_keys({key: d2[key] for key in d2 if key.startswith("payload(bow,")})
-            }
-
-            merged_tpcs.append(new_dict)
-
-        return merged_tpcs, sc
+        return results.docs, sc
 
     def do_Q10(self,
                model_col: str,
@@ -1389,32 +1343,145 @@ class NPSolrClient(SolrClient):
         
         # 0. Convert corpus and model names to lowercase
         corpus_col = corpus_col.lower()
-        model_name = model_name.lower()
+        model_col = model_name.lower()
         
         # 1. Check that corpus_col is indeed a corpus collection
         if not self.check_is_corpus(corpus_col):
             return
         
         # 2. Check that corpus_col has the model_name field
-        if not self.check_corpus_has_model(corpus_col, model_name):
+        if not self.check_corpus_has_model(corpus_col, model_col):
             return
 
         # 3. Lemmatize and get embedding from search_word
-        resp = self.nptooler.get_word_embedding(
-            word_to_embed=search_word,
+        resp = self.nptooler.get_embedding(
+            text_to_embed=search_word,
             embedding_model=embedding_model,
             model_for_embedding=model_name,
             lang=lang
         )
-
+        
         if resp.status_code != 200:
             self.logger.error(
-                f"-- -- Error getting embeddings from {search_word} while executing query Q20. Aborting operation...")
+                f"-- -- Error attaining embeddings from {search_word} while executing query Q20. Aborting operation...")
+            return
+
+        embs = resp.results
+        self.logger.info(
+            f"-- -- Embbedings for word {search_word} attained in {resp.time} seconds: {embs}")
+         
+        # 4. Customize start and rows
+        start, rows = self.custom_start_and_rows(start, rows, model_col)
+        self.logger.info(f"-- -- Start: {start}, Rows: {rows}")
+        
+        # 5. Calculate cosine similarity between the embedding of search_word and the embeddings of the documents in the corpus
+        distance = "cosine"
+
+        # 5. Execute query
+        q20 = self.querier.customize_Q20(
+            wd_embeddings=embs,
+            distance=distance,
+            start=start,
+            rows=rows
+        )
+        params = {k: v for k, v in q20.items() if k != 'q'}
+
+        sc, results = self.execute_query(
+            q=q20['q'], col_name=model_col, **params)
+
+        if sc != 200:
+            self.logger.error(
+                f"-- -- Error executing query Q20. Aborting operation...")
             return
         
-        # 4. Calculate cosine similarity between the embedding of search_word and the embeddings of the documents in the corpus
-        distance = "cosine"
-        
         # 5. Find the topic that is most similar to the search_word
+        #self.logger.info(f"-- -- Results: {results.docs}")
+        #self.logger.info(f"-- -- Results: {results.docs[0]}")
+        closest_tpc = results.docs[0]["id"].split("t")[1]
+        sim_score = results.docs[0]["score"]
+        self.logger.info(f"-- -- Closest topic: {closest_tpc}")
+        self.logger.info(f"-- -- Similarity score: {sim_score}")
         
-        # 6. Return the id of the topic and the similarity score
+        # 6. Get top documents for that topic
+        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
+        docs, sc = self.do_Q9(
+            corpus_col=corpus_col,
+            model_name=model_col,
+            topic_id=closest_tpc,
+            start=start,
+            rows=rows
+        )
+        
+        self.logger.info(f"-- -- Docs: {docs}")
+        
+        
+        # 7. Return the id of the topic, the similarity score, and the top documents for that topic
+        response = {
+            "topic_id": closest_tpc,
+            "topoc_str": "t" + closest_tpc,
+            "similarity_score": sim_score,
+            "docs": docs
+        }
+        
+        return response, sc
+    
+    def do_Q21(
+        self,
+        corpus_col:str,
+        search_doc:str,
+        start:int,
+        rows:int,
+        embedding_model:str = "word2vec",
+        lang:str = "es",
+    ) -> Union[dict,int]:
+        
+        # 0. Convert corpus to lowercase
+        corpus_col = corpus_col.lower()
+        
+        # 1. Check that corpus_col is indeed a corpus collection
+        if not self.check_is_corpus(corpus_col):
+            return
+        
+        # 3. Get embedding from search_doc
+        resp = self.nptooler.get_embedding(
+            text_to_embed=search_doc,
+            embedding_model=embedding_model,
+            lang=lang
+        )
+        
+        if resp.status_code != 200:
+            self.logger.error(
+                f"-- -- Error attaining embeddings from {search_doc} while executing query Q21. Aborting operation...")
+            return
+
+        embs = resp.results
+        self.logger.info(
+            f"-- -- Embbedings for doc {search_doc} attained in {resp.time} seconds: {embs}")
+        
+        with open("/data/source/embs.txt", 'w') as file:
+            file.write(embs)
+         
+        # 4. Customize start and rows
+        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
+        
+        # 5. Calculate cosine similarity between the embedding of search_doc and the embeddings of the documents in the corpus
+        distance = "cosine"
+
+        # 5. Execute query
+        q21 = self.querier.customize_Q21(
+            doc_embeddings=embs,
+            distance=distance,
+            start=start,
+            rows=rows
+        )
+        params = {k: v for k, v in q21.items() if k != 'q'}
+
+        sc, results = self.execute_query(
+            q=q21['q'], col_name=corpus_col, **params)
+
+        if sc != 200:
+            self.logger.error(
+                f"-- -- Error executing query Q21. Aborting operation...")
+            return
+
+        return results.docs, sc

@@ -18,7 +18,7 @@ class Embedder(object):
         min_count: int = 10,
         sg: int = 1,
         default_w2vec: str = "word2vec-google-news-300",
-        default_bert: str = "all-mpnet-base-v2",
+        default_bert: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         max_sequence_length: int = 384,
         logger: logging.Logger = None,
     ) -> None:
@@ -63,9 +63,9 @@ class Embedder(object):
     def _get_sentence_embedding(
         self,
         sent: list[str],
-        w2vec_model: Word2Vec,
-        sbert_model_to_load: str ="all-mpnet-base-v2",
+        sbert_model_to_load: str ="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         batch_size: int = 32,
+        w2vec_model: Word2Vec = None,
         max_seq_length: int = None,
         method: str = "word2vec"
     ) -> np.ndarray:
@@ -112,7 +112,7 @@ class Embedder(object):
             if max_seq_length is not None:
                 model.max_seq_length = max_seq_length
 
-            self._check_max_local_length(max_seq_length, sent)
+            #self._check_max_local_length(max_seq_length, sent)
             embeddings = model.encode(
                 sent, show_progress_bar=True, batch_size=batch_size)  # .tolist()
 
@@ -197,6 +197,7 @@ class Embedder(object):
 
         # Get embeddings according to the method specified
         if method == "word2vec":
+            self.logger.info(f"-- -- Calculating embeddings with Word2Vec...")
             # Load Word2Vec model. If do_train_w2vec is True, train the model and save it in the same directory as the corpus file with name "model_w2v_{corpus_file.stem}.model". Otherwise, load the model from the path specified in model_path. If model_path is None, load the default model.
             if model_path is None:
                 if do_train_w2vec:
@@ -210,12 +211,14 @@ class Embedder(object):
             if model_path is not None:
                 model = Word2Vec.load(model_path.as_posix())
                 self.logger.info(f"Word2Vec model loaded from {model_path}")
+            else:
+                self.logger.error(f"Word2Vec could not be loaded from {model_path}")
             # If we are just getting the embedding of one word, return the embedding directly
-            if len(embed_from) == 1 and len(embed_from[0]) == 1:
+            if len(embed_from) == 1 and len(embed_from[0].split()) == 1:
                 self.logger.info(f"Getting embedding for word {embed_from[0][0]}")
-                return model.wv[embed_from[0][0]]
+                return model.wv[embed_from[0]]
             # If we are getting the embedding of one sentence, return the average of the embeddings of the words in the sentence
-            elif len(embed_from) == 1:
+            elif len(embed_from) == 1 and len(embed_from[0].split()) > 1:
                 self.logger.info(f"Getting embedding for sentence {embed_from[0]}")
                 return self._get_sentence_embedding(
                         sent=embed_from[0], w2vec_model= model.wv, method=method)

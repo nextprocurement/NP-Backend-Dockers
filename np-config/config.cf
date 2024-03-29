@@ -32,7 +32,7 @@ window=5
 min_count=10
 sg=1
 default_w2vec=word2vec-google-news-300
-default_bert=all-mpnet-base-v2
+default_bert=all-MiniLM-L6-v2
 max_sequence_length=384
 
 # There will be one of this for each corpus avaialable

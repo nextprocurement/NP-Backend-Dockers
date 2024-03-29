@@ -164,10 +164,19 @@ class Queries(object):
 
         # If adding a new one, start numberation at 20
         # ================================================================
-        # # Q20: getSimWithTpcEmbeddings ##################################################################
+        # # Q20: getDocsRelatedToDoc ##################################################################
         self.Q20 = {
             'q': "{{!vd f=tpc_embeddings vector=\"{}\" distance=\"{}\"}}",
             'fl': "id,score",
+            'start': '{}',
+            'rows': '{}'
+        }
+        
+        # ================================================================
+        # # Q21: getDocsRelatedToFreeTextEmb ##################################################################
+        self.Q20 = {
+            'q': "{{!vd f=embeddings vector=\"{}\" distance=\"{}\"}}",
+            'fl': "id,summary,lot_name,score",
             'start': '{}',
             'rows': '{}'
         }
@@ -484,12 +493,14 @@ class Queries(object):
 
         return custom_q18
 
-    def customize_Q20(self,
-                      wd_embeddings: str,
-                      distance: str,
-                      start: str,
-                      rows: str) -> dict:
-        """Customizes query Q20 'getSimWithTpcEmbeddings'
+    def customize_Q20(
+        self,
+        wd_embeddings: str,
+        distance: str,
+        start: str,
+        rows: str
+    ) -> dict:
+        """Customizes query Q20 'getDocsRelatedToDoc'
 
         Parameters
         ----------
@@ -510,6 +521,41 @@ class Queries(object):
 
         custom_q20 = {
             'q': self.Q20['q'].format(wd_embeddings, distance),
+            'fl': self.Q20['fl'],
+            'start': self.Q20['start'].format(start),
+            'rows': self.Q20['rows'].format(rows),
+        }
+        return custom_q20
+    
+    def customize_Q21(
+        self,
+        doc_embeddings: str,
+        distance: str,
+        start: str,
+        rows: str
+    ) -> dict:
+        """Customizes query Q21 'getDocsRelatedToFreeTextEmb'
+
+        Parameters
+        ----------
+        doc_embeddings: str
+            Embeddings of the user's free doc.
+        distance: str
+            Distance metric to be used.
+        start: str
+            Start value.
+        rows: str
+            Number of rows to retrieve.
+
+        Returns
+        -------
+        custom_q5: dict
+            Customized query Q5.
+        """
+
+        custom_q20 = {
+            'q': self.Q20['q'].format(doc_embeddings, distance),
+            'fl': self.Q20['fl'],
             'start': self.Q20['start'].format(start),
             'rows': self.Q20['rows'].format(rows),
         }

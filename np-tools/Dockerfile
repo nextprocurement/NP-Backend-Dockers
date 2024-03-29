@@ -58,8 +58,9 @@ RUN python -m spacy download es_dep_news_trf
 RUN python -m spacy download en_core_web_trf
 
 # Download and cache the sentence transformer model
-ARG MODEL_NAME=paraphrase-multilingual-MiniLM-L12-v2
+ARG MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${MODEL_NAME}')"
+RUN python initialize_st.py
 
 EXPOSE 102
 

@@ -68,6 +68,8 @@ services:
       - zoo:2181
       - -a
       - "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044 -Djute.maxbuffer=0x5000000"
+    environment:
+      - SOLR_OPTS=-Dsolr.jetty.request.header.size=65535
     networks:
       - np-net
 

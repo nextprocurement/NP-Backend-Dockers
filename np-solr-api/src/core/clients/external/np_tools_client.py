@@ -9,6 +9,7 @@ Date: 21/05/2023
 
 import logging
 import os
+from urllib.parse import urlencode
 
 import requests
 from src.core.clients.external.api_generic.client import Client
@@ -87,12 +88,12 @@ class NPToolsClient(Client):
 
         return inf_resp
 
-    def get_word_embedding(
+    def get_embedding(
         self,
-        word_to_embed: str,
+        text_to_embed: str,
         embedding_model: str,
-        model_for_embedding: str,
-        lang: str
+        lang: str,
+        model_for_embedding: str = None
     ) -> NPToolsResponse:
         """Get the embedding of a word using the given model.
 
@@ -115,17 +116,31 @@ class NPToolsClient(Client):
 
         headers_ = {'Accept': 'application/json'}
 
-        params_ = {
-            'text_to_embed': word_to_embed,
-            'embedding_model': embedding_model,
-            'model': model_for_embedding,
-            'lang': lang
-        }
+        if model_for_embedding is None:
+            params_ = {
+                'text_to_embed': text_to_embed,
+                'embedding_model': embedding_model,
+                'lang': lang
+            }
+        else:
+            params_ = {
+                'text_to_embed': text_to_embed,
+                'embedding_model': embedding_model,
+                'model': model_for_embedding,
+                'lang': lang
+            }
+            
+        encoded_params = urlencode(params_)
 
-        url_ = '{}/embedder/getEmbedding'.format(self.nptools_url)
+        url_ = '{}/embedder/getEmbedding/?{}'.format(
+            self.nptools_url, encoded_params)
+        
+        self.logger.info(f"URL: {url_}")
 
-        # Send request to Inferencer
+        # Send request to NPtooler
         resp = self._do_request(
-            type="get", url=url_, timeout=120, headers=headers_, params=params_)
-
+            type="get", url=url_, timeout=120, headers=headers_)
+        
+        self.logger.info(f"Response: {resp}")
+        
         return resp

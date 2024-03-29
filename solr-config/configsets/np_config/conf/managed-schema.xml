@@ -139,6 +139,11 @@
   <!-- NP fields  -->
   <field name="summary" type="text_general" indexed="true" stored="true" multiValued="false" />
   <field name="cpv" type="text_general" indexed="true" stored="true" multiValued="false" />
+  <field name="lot_name" type="text_general" indexed="true" stored="true" multiValued="false" />
+  <field name="text" type="text_general" indexed="true" stored="true" multiValued="false" />
+  <field name="lang" type="text_general" indexed="true" stored="true" multiValued="false" />
+  <field name="normalized_text" type="text_general" indexed="true" stored="true" multiValued="false" />
+  <field name="preprocessed_text" type="text_general" indexed="true" stored="true" multiValued="false" />
 
   <!-- docValues are enabled by default for long type so we don't need to index the version field  -->
   <field name="_version_" type="plong" indexed="false" stored="false" />
