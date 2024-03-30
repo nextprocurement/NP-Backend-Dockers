@@ -879,6 +879,7 @@ class NPSolrClient(SolrClient):
     #     start, rows = self.custom_start_and_rows(start, rows, corpus_col)
 
     #     # 5. Execute query
+    #     distance = "bhattacharyya"
     #     q5 = self.querier.customize_Q5(
     #         model_name=model_name, thetas=thetas,
     #         start=start, rows=rows)

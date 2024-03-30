@@ -57,7 +57,7 @@ class Queries(object):
         # 3. Execute Q4
         # ================================================================
         self.Q5 = {
-            'q': "{{!vp f=doctpc_{} vector=\"{}\"}}",
+            'q': "{{!vd f=doctpc_{} vector=\"{}\" distance=\"{}\"}}",
             'fl': "id,score",
             'start': '{}',
             'rows': '{}'
@@ -176,7 +176,7 @@ class Queries(object):
         # # Q21: getDocsRelatedToFreeTextEmb ##################################################################
         self.Q20 = {
             'q': "{{!vd f=embeddings vector=\"{}\" distance=\"{}\"}}",
-            'fl': "id,summary,lot_name,score",
+            'fl': "id,title,score",
             'start': '{}',
             'rows': '{}'
         }
@@ -241,6 +241,7 @@ class Queries(object):
     def customize_Q5(self,
                      model_name: str,
                      thetas: str,
+                     distance: str,
                      start: str,
                      rows: str) -> dict:
         """Customizes query Q5 'getDocsWithHighSimWithDocByid'
@@ -251,6 +252,8 @@ class Queries(object):
             Name of the topic model whose topic distribution is to be retrieved.
         thetas: str
             Topic distribution of the selected document.
+        distance: str
+            Distance metric to be used.
         start: str
             Start value.
         rows: str
@@ -263,7 +266,7 @@ class Queries(object):
         """
 
         custom_q5 = {
-            'q': self.Q5['q'].format(model_name, thetas),
+            'q': self.Q5['q'].format(model_name, thetas, distance),
             'fl': self.Q5['fl'].format(model_name),
             'start': self.Q5['start'].format(start),
             'rows': self.Q5['rows'].format(rows),

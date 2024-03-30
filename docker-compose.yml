@@ -53,7 +53,6 @@ services:
     restart: always
     volumes:
       - ./db/data/solr:/var/solr
-      - ./solr-plugins/solr-ewb-jensen-shanon-distance-plugin/solr-js-plugin/target/solr-js-plugin-1.0.0.jar:/opt/solr/dist/plugins/solr-js-plugin-1.0.0.jar
       - ./solr-plugins/NP-solr-dist-plugin/NP-solr-dist-plugin.jar:/opt/solr/dist/plugins/NP-solr-dist-plugin.jar
       - ./solr-config:/opt/solr/server/solr
     ports:
