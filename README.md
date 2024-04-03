@@ -22,6 +22,9 @@ This multi-container application is orchestrated using a docker-compose script, 
 
 ![Python Dockers](https://github.com/nextprocurement/NP-Backend-Dockers/blob/main/static/Images/np_1.png)
 
+<img src="[drawing.jpg](https://github.com/nextprocurement/NP-Backend-Dockers/blob/main/static/Images/np_1.png)" alt="drawing" style="width:100px;"/>
+
+
 ## ⚙️ Steps for deployment
 
 1. Clone the repository:
