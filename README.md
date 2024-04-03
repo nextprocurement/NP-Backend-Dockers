@@ -2,15 +2,15 @@
 
 - [NP-Backend-Dockers](#np-backend-dockers)
   - [Overview](#overview)
-  - [⚙️ Steps for deployment](#️-steps-for-deployment)
-  - [🧩 Main components](#-main-components)
+  - [Steps for deployment](#️-steps-for-deployment)
+  - [Main components](#-main-components)
     - [np-solr-api](#np-solr-api)
     - [np-solr](#np-solr)
     - [np-solr-initializer](#np-solr-initializer)
     - [np-zoo](#np-zoo)
     - [np-solr-config](#np-solr-config)
     - [np-tools](#np-tools)
-  - [📈 Usage](#-usage)
+  - [Usage](#-usage)
   - [Requirements](#requirements)
 
 
@@ -22,7 +22,7 @@ This multi-container application is orchestrated using a docker-compose script, 
 
 <img src='static/Images/np_1.png' width='500'>
 
-## ⚙️ Steps for deployment
+## Steps for deployment
 
 1. Clone the repository:
 
@@ -76,7 +76,7 @@ This multi-container application is orchestrated using a docker-compose script, 
 > If you encounter any problems, write an email to [lcalvo@pa.uc3m.es](mailto:lcalvo@pa.uc3m.es).
 
 
-## 🧩 Main components
+## Main components
 
 ### np-solr-api
 
@@ -117,7 +117,7 @@ This service deploys a RESTful API with a series of auxiliary endpoints. Right n
 
 It has the same mounted volumes as the ``np-solr-api`` service.
 
-## 📈 Usage
+## Usage
 
 Visit the [Wiki page](https://github.com/nextprocurement/NP-Backend-Dockers/wiki/NP-Solr-API) for instructions on indexing information into Solr, available queries, and their return formats.
 
