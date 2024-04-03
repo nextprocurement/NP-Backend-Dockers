@@ -23,7 +23,7 @@ sc = NPSolrClient(api.logger)
 # Define parser to take inputs from user
 parser = reqparse.RequestParser()
 parser.add_argument(
-    'model_path', help="Specify the path of the model to index / delete (i.e., path to the folder within the TMmodels folder in the project folder describing a ITMT's topic model)")
+    'model_name', help="Name of the model to index/index. You should specify the name of the folder in which topic model information is stored.")
 
 parser_add_rel = reqparse.RequestParser()
 parser_add_rel.add_argument(
@@ -46,9 +46,9 @@ class IndexModel(Resource):
     @api.doc(parser=parser)
     def post(self):
         args = parser.parse_args()
-        model_path = args['model_path']
+        model_name = args['model_name']
         try:
-            sc.index_model(model_path)
+            sc.index_model(model_name)
             return '', 200
         except Exception as e:
             return str(e), 500
@@ -59,9 +59,9 @@ class DeleteModel(Resource):
     @api.doc(parser=parser)
     def post(self):
         args = parser.parse_args()
-        model_path = args['model_path']
+        model_name = args['model_name']
         try:
-            sc.delete_model(model_path)
+            sc.delete_model(model_name)
             return '', 200
         except Exception as e:
             return str(e), 500

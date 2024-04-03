@@ -22,7 +22,7 @@ sc = NPSolrClient(api.logger)
 # Define parser to take inputs from user
 parser = reqparse.RequestParser()
 parser.add_argument(
-    'corpus_path', help="Path of the corpus to index / delete (i.e., path to the json file within the /datasets folder in the project folder describing a ITMT's logical corpus)")
+    'corpus_name', help="Name of the corpus to index/delete. For example, if the corpus we want to index is stored in a file name 'corpus.parquet', the corpus_name should be 'corpus' (without the extension quotes). Do not use quotes in the name of the corpus.")
 
 parser2 = reqparse.RequestParser()
 parser2.add_argument(
@@ -54,9 +54,9 @@ class IndexCorpus(Resource):
     @api.doc(parser=parser)
     def post(self):
         args = parser.parse_args()
-        corpus_path = args['corpus_path']
+        corpus_name = args['corpus_name']
         try:
-            sc.index_corpus(corpus_path)
+            sc.index_corpus(corpus_name)
             return '', 200
         except Exception as e:
             return str(e), 500
@@ -66,9 +66,9 @@ class DeleteCorpus(Resource):
     @api.doc(parser=parser)
     def post(self):
         args = parser.parse_args()
-        corpus_path = args['corpus_path']
+        corpus_name = args['corpus_name']
         try:
-            sc.delete_corpus(corpus_path)
+            sc.delete_corpus(corpus_name)
             return '', 200
         except Exception as e:
             return str(e), 500

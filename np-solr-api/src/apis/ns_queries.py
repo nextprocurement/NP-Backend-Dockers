@@ -37,7 +37,6 @@ q3_parser = reqparse.RequestParser()
 q3_parser.add_argument(
     'collection', help='Name of the collection', required=True)
 
-"""
 q5_parser = reqparse.RequestParser()
 q5_parser.add_argument(
     'corpus_collection', help='Name of the corpus collection', required=True)
@@ -49,7 +48,6 @@ q5_parser.add_argument(
     'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
 q5_parser.add_argument(
     'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
-"""
 
 q6_parser = reqparse.RequestParser()
 q6_parser.add_argument(
@@ -95,7 +93,6 @@ q10_parser.add_argument(
 q10_parser.add_argument(
     'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
 
-"""
 q14_parser = reqparse.RequestParser()
 q14_parser.add_argument(
     'corpus_collection', help='Name of the corpus collection', required=True)
@@ -107,7 +104,6 @@ q14_parser.add_argument(
     'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
 q14_parser.add_argument(
     'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
-"""
 
 q20_parser = reqparse.RequestParser()
 q20_parser.add_argument(
@@ -130,7 +126,6 @@ q21_parser.add_argument(
     'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
 q21_parser.add_argument(
     'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
-
 
 
 @api.route('/getThetasDocById/')
@@ -174,7 +169,6 @@ class getNrDocsColl(Resource):
             return str(e), 500
 
 
-"""
 @api.route('/getDocsWithHighSimWithDocByid/')
 class getDocsWithHighSimWithDocByid(Resource):
     @api.doc(parser=q5_parser)
@@ -194,7 +188,6 @@ class getDocsWithHighSimWithDocByid(Resource):
                             rows=rows)
         except Exception as e:
             return str(e), 500
-"""
 
 
 @api.route('/getMetadataDocById/')
@@ -286,9 +279,8 @@ class getModelInfo(Resource):
             return str(e), 500
 
 
-"""
-@api.route('/getDocsSimilarToFreeText/')
-class getDocsSimilarToFreeText(Resource):
+@api.route('/getDocsSimilarToFreeTextTM/')
+class getDocsSimilarToFreeTextTM(Resource):
     @api.doc(parser=q14_parser)
     def get(self):
         args = q14_parser.parse_args()
@@ -300,13 +292,12 @@ class getDocsSimilarToFreeText(Resource):
 
         try:
             return sc.do_Q14(corpus_col=corpus_collection,
-                            model_name=model_name,
-                            text_to_infer=text_to_infer,
-                            start=start,
-                            rows=rows)
+                             model_name=model_name,
+                             text_to_infer=text_to_infer,
+                             start=start,
+                             rows=rows)
         except Exception as e:
             return str(e), 500
-"""
 
 
 @api.route('/getDocsRelatedToWord/')
@@ -324,15 +315,16 @@ class getDocsRelatedToWord(Resource):
                 corpus_col=corpus_collection,
                 model_name=model_collection,
                 search_word=search_word,
-                embedding_model= "word2vec",
+                embedding_model="word2vec",
                 start=start,
                 rows=rows
             )
         except Exception as e:
             return str(e), 500
-        
-@api.route('/getDocsRelatedToFreeTextEmb/')
-class getDocsRelatedToFreeTextEmb(Resource):
+
+
+@api.route('/getDocsSimilarToFreeTextEmb/')
+class getDocsSimilarToFreeTextEmb(Resource):
     @api.doc(parser=q21_parser)
     def get(self):
         args = q21_parser.parse_args()
@@ -344,10 +336,9 @@ class getDocsRelatedToFreeTextEmb(Resource):
             return sc.do_Q21(
                 corpus_col=corpus_collection,
                 search_doc=doc,
-                embedding_model= "bert",
+                embedding_model="bert",
                 start=start,
                 rows=rows
             )
         except Exception as e:
             return str(e), 500
-

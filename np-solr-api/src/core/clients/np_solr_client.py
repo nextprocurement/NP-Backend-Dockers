@@ -9,13 +9,8 @@ Modifed: 24/01/2024 (Updated for NP-Solr-Service (NextProcurement Proyect))
 import configparser
 import logging
 import pathlib
-import re
-import time
-import pandas as pd
 from typing import List, Union
-# from src.core.clients.external.np_inferencer_client import NPInferencerClient 
 from src.core.clients.external.np_tools_client import NPToolsClient
-# #TODO:Add and update if necessary
 from src.core.clients.base.solr_client import SolrClient
 from src.core.entities.corpus import Corpus
 from src.core.entities.model import Model
@@ -24,9 +19,11 @@ from src.core.entities.queries import Queries
 
 class NPSolrClient(SolrClient):
 
-    def __init__(self,
-                 logger: logging.Logger,
-                 config_file: str = "/config/config.cf") -> None:
+    def __init__(
+        self,
+        logger: logging.Logger,
+        config_file: str = "/config/config.cf"
+    ) -> None:
         super().__init__(logger)
 
         # Read configuration from config file
@@ -37,17 +34,13 @@ class NPSolrClient(SolrClient):
         self.corpus_col = cf.get('restapi', 'corpus_col')
         self.no_meta_fields = cf.get('restapi', 'no_meta_fields').split(",")
         self.path_source = pathlib.Path(cf.get('restapi', 'path_source'))
-        # TODO: Check if necessary
         self.thetas_max_sum = int(cf.get('restapi', 'thetas_max_sum'))
-        # TODO: Check if necessary
         self.betas_max_sum = int(cf.get('restapi', 'betas_max_sum'))
 
         # Create Queries object for managing queries
         self.querier = Queries()
 
-        # Create InferencerClient to send requests to the Inferencer API
-        # TODO: Uncomment and update if necessary
-        # self.inferencer = NPInferencerClient(logger)
+        # Create NPToolsClient to send requests to the NPTools API
         self.nptooler = NPToolsClient(logger)
 
         return
@@ -56,8 +49,10 @@ class NPSolrClient(SolrClient):
     # CORPUS-RELATED OPERATIONS
     # ======================================================
 
-    def index_corpus(self,
-                     corpus_raw: str) -> None:
+    def index_corpus(
+        self,
+        corpus_raw: str
+    ) -> None:
         """
         This method takes the name of a corpus raw file as input. It creates a Solr collection with the stem name of the file, which is obtained by converting the file name to lowercase (for example, if the input is 'Cordis', the stem would be 'cordis'). However, this process occurs only if the directory structure (self.path_source / corpus_raw / parquet) exists.
 
@@ -307,8 +302,7 @@ class NPSolrClient(SolrClient):
 
         return results.docs[0]["models"], sc
 
-    def delete_corpus(self,
-                      corpus_logical_path: str) -> None:
+    def delete_corpus(self, corpus_logical_path: str) -> None:
         """Given the string path of corpus file, it deletes the Solr collection associated with it. Additionally, it removes the document entry of the corpus in the self.corpus_col collection and all the models that have been trained with such a logical corpus.
 
         Parameters
@@ -670,10 +664,12 @@ class NPSolrClient(SolrClient):
     # QUERIES
     # ======================================================
 
-    def do_Q1(self,
-              corpus_col: str,
-              doc_id: str,
-              model_name: str) -> Union[dict, int]:
+    def do_Q1(
+        self,
+        corpus_col: str,
+        doc_id: str,
+        model_name: str
+    ) -> Union[dict, int]:
         """Executes query Q1.
 
         Parameters
@@ -725,7 +721,10 @@ class NPSolrClient(SolrClient):
 
         return resp, sc
 
-    def do_Q2(self, corpus_col: str) -> Union[dict, int]:
+    def do_Q2(
+        self,
+        corpus_col: str
+    ) -> Union[dict, int]:
         """
         Executes query Q2.
 
@@ -773,7 +772,10 @@ class NPSolrClient(SolrClient):
 
         return {'metadata_fields': Metadatadisplayed}, sc
 
-    def do_Q3(self, col: str) -> Union[dict, int]:
+    def do_Q3(
+        self,
+        col: str
+    ) -> Union[dict, int]:
         """Executes query Q3.
 
         Parameters
@@ -811,97 +813,103 @@ class NPSolrClient(SolrClient):
 
         return {'ndocs': int(results.hits)}, sc
 
-    # def do_Q5(self,
-    #           corpus_col: str,
-    #           model_name: str,
-    #           doc_id: str,
-    #           start: str,
-    #           rows: str) -> Union[dict, int]:
-    #     """Executes query Q5.
+    def do_Q5(
+        self,
+        corpus_col: str,
+        model_name: str,
+        doc_id: str,
+        start: str,
+        rows: str
+    ) -> Union[dict, int]:
+        """Executes query Q5.
 
-    #     Parameters
-    #     ----------
-    #     corpus_col : str
-    #         Name of the corpus collection
-    #     model_name: str
-    #         Name of the model to be used for the retrieval
-    #     doc_id: str
-    #         ID of the document whose similarity is going to be checked against all other documents in 'corpus_col'
-    #      start: str
-    #         Offset into the responses at which Solr should begin displaying content
-    #     rows: str
-    #         How many rows of responses are displayed at a time
+        Parameters
+        ----------
+        corpus_col : str
+            Name of the corpus collection
+        model_name: str
+            Name of the model to be used for the retrieval
+        doc_id: str
+            ID of the document whose similarity is going to be checked against all other documents in 'corpus_col'
+         start: str
+            Offset into the responses at which Solr should begin displaying content
+        rows: str
+            How many rows of responses are displayed at a time
 
-    #     Returns
-    #     -------
-    #     json_object: dict
-    #         JSON object with the results of the query.
-    #     sc : int
-    #         The status code of the response.
-    #     """
+        Returns
+        -------
+        json_object: dict
+            JSON object with the results of the query.
+        sc : int
+            The status code of the response.
+        """
 
-    #     # 0. Convert corpus and model names to lowercase
-    #     corpus_col = corpus_col.lower()
-    #     model_name = model_name.lower()
+        # 0. Convert corpus and model names to lowercase
+        corpus_col = corpus_col.lower()
+        model_col = model_name.lower()
 
-    #     # 1. Check that corpus_col is indeed a corpus collection
-    #     if not self.check_is_corpus(corpus_col):
-    #         return
+        # 1. Check that corpus_col is indeed a corpus collection
+        if not self.check_is_corpus(corpus_col):
+            return
 
-    #     # 2. Check that corpus_col has the model_name field
-    #     if not self.check_corpus_has_model(corpus_col, model_name):
-    #         return
+        # 2. Check that corpus_col has the model_col field
+        if not self.check_corpus_has_model(corpus_col, model_col):
+            return
 
-    #     # 3. Execute Q1 to get thetas of document given by doc_id
-    #     thetas_dict, sc = self.do_Q1(
-    #         corpus_col=corpus_col, model_name=model_name, doc_id=doc_id)
-    #     thetas = thetas_dict['thetas']
+        # 3. Execute Q1 to get thetas of document given by doc_id
+        thetas_dict, sc = self.do_Q1(
+            corpus_col=corpus_col, model_name=model_col, doc_id=doc_id)
+        thetas = thetas_dict['thetas']
 
-    #     # 4. Check that thetas are available on the document given by doc_id. If not, infer them
-    #     if thetas == -1:
-    #         # Get text (lemmas) of the document so its thetas can be inferred
-    #         lemmas_dict, sc = self.do_Q15(
-    #             corpus_col=corpus_col, doc_id=doc_id)
-    #         lemmas = lemmas_dict['lemmas']
+        # 4. Check that thetas are available on the document given by doc_id. If not, infer them
+        if thetas == -1:
+            # Get text (lemmas) of the document so its thetas can be inferred
+            lemmas_dict, sc = self.do_Q15(
+                corpus_col=corpus_col, doc_id=doc_id)
+            lemmas = lemmas_dict['lemmas']
+            
+            inf_resp = self.nptooler.get_thetas(text_to_infer=lemmas,
+                                                model_for_infer=model_name)
+        
+            if inf_resp.status_code != 200:
+                self.logger.error(
+                    f"-- -- Error attaining thetas from {lemmas} while executing query Q5. Aborting operation...")
+                return
 
-    #         inf_resp = self.inferencer.infer_doc(text_to_infer=lemmas,
-    #                                              model_for_inference=model_name)
-    #         if inf_resp.status_code != 200:
-    #             self.logger.error(
-    #                 f"-- -- Error attaining thetas from {lemmas} while executing query Q5. Aborting operation...")
-    #             return
+            thetas = inf_resp.results[0]['thetas']
 
-    #         thetas = inf_resp.results[0]['thetas']
-    #         self.logger.info(
-    #             f"-- -- Thetas attained in {inf_resp.time} seconds: {thetas}")
+            self.logger.info(
+                f"-- -- Thetas attained in {inf_resp.time} seconds: {thetas}")
 
-    #     # 4. Customize start and rows
-    #     start, rows = self.custom_start_and_rows(start, rows, corpus_col)
+        # 4. Customize start and rows
+        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
+        
+        # 5. Execute query
+        distance = "bhattacharyya"
+        q5 = self.querier.customize_Q5(
+            model_name=model_col, thetas=thetas, distance=distance,
+            start=start, rows=rows)
+        params = {k: v for k, v in q5.items() if k != 'q'}
+        
+        sc, results = self.execute_query(
+            q=q5['q'], col_name=corpus_col, **params)
+        
+        if sc != 200:
+            self.logger.error(
+                f"-- -- Error executing query Q5. Aborting operation...")
+            return
+        
+        # 6. Normalize scores
+        for el in results.docs:
+            el['score'] *= (100/(self.thetas_max_sum ^ 2))
 
-    #     # 5. Execute query
-    #     distance = "bhattacharyya"
-    #     q5 = self.querier.customize_Q5(
-    #         model_name=model_name, thetas=thetas,
-    #         start=start, rows=rows)
-    #     params = {k: v for k, v in q5.items() if k != 'q'}
+        return results.docs, sc
 
-    #     sc, results = self.execute_query(
-    #         q=q5['q'], col_name=corpus_col, **params)
-
-    #     if sc != 200:
-    #         self.logger.error(
-    #             f"-- -- Error executing query Q5. Aborting operation...")
-    #         return
-
-    #     # 6. Normalize scores
-    #     for el in results.docs:
-    #         el['score'] *= (100/(self.thetas_max_sum ^ 2))
-
-    #     return results.docs, sc
-
-    def do_Q6(self,
-              corpus_col: str,
-              doc_id: str) -> Union[dict, int]:
+    def do_Q6(
+        self,
+        corpus_col: str,
+        doc_id: str
+    ) -> Union[dict, int]:
         """Executes query Q6.
 
         Parameters
@@ -946,11 +954,13 @@ class NPSolrClient(SolrClient):
 
         return results.docs, sc
 
-    def do_Q7(self,
-              corpus_col: str,
-              string: str,
-              start: str,
-              rows: str) -> Union[dict, int]:
+    def do_Q7(
+        self,
+        corpus_col: str,
+        string: str,
+        start: str,
+        rows: str
+    ) -> Union[dict, int]:
         """Executes query Q7.
 
         Parameters
@@ -1010,9 +1020,10 @@ class NPSolrClient(SolrClient):
         return results.docs, sc
 
     def do_Q8(self,
-              model_col: str,
-              start: str,
-              rows: str) -> Union[dict, int]:
+        model_col: str,
+        start: str,
+        rows: str
+    ) -> Union[dict, int]:
         """Executes query Q8.
 
         Parameters
@@ -1057,11 +1068,12 @@ class NPSolrClient(SolrClient):
         return results.docs, sc
 
     def do_Q9(self,
-              corpus_col: str,
-              model_name: str,
-              topic_id: str,
-              start: str,
-              rows: str) -> Union[dict, int]:
+        corpus_col: str,
+        model_name: str,
+        topic_id: str,
+        start: str,
+        rows: str
+    ) -> Union[dict, int]:
         """Executes query Q9.
 
         Parameters
@@ -1131,10 +1143,11 @@ class NPSolrClient(SolrClient):
         return results.docs, sc
 
     def do_Q10(self,
-               model_col: str,
-               start: str,
-               rows: str,
-               only_id: bool) -> Union[dict, int]:
+        model_col: str,
+        start: str,
+        rows: str,
+        only_id: bool
+    ) -> Union[dict, int]:
         """Executes query Q10.
 
         Parameters
@@ -1179,85 +1192,97 @@ class NPSolrClient(SolrClient):
 
         return results.docs, sc
 
-    # def do_Q14(self,
-    #            corpus_col: str,
-    #            model_name: str,
-    #            text_to_infer: str,
-    #            start: str,
-    #            rows: str) -> Union[dict, int]:
-    #     """Executes query Q14.
+    def do_Q14(self,
+        corpus_col: str,
+        model_name: str,
+        text_to_infer: str,
+        start: str,
+        rows: str
+    ) -> Union[dict, int]:
+        """Executes query Q14.
 
-    #     Parameters
-    #     ----------
-    #     corpus_col : str
-    #         Name of the corpus collection
-    #     model_name: str
-    #         Name of the model to be used for the retrieval
-    #     text_to_infer: str
-    #         Text to be inferred
-    #      start: str
-    #         Offset into the responses at which Solr should begin displaying content
-    #     rows: str
-    #         How many rows of responses are displayed at a time
+        Parameters
+        ----------
+        corpus_col : str
+            Name of the corpus collection
+        model_name: str
+            Name of the topic model to be used for the retrieval
+        text_to_infer: str
+            Text to be inferred
+         start: str
+            Offset into the responses at which Solr should begin displaying content
+        rows: str
+            How many rows of responses are displayed at a time
 
-    #     Returns
-    #     -------
-    #     json_object: dict
-    #         JSON object with the results of the query.
-    #     sc : int
-    #         The status code of the response.
-    #     """
+        Returns
+        -------
+        json_object: dict
+            JSON object with the results of the query.
+        sc : int
+            The status code of the response.
+        """
 
-    #     # 0. Convert corpus and model names to lowercase
-    #     corpus_col = corpus_col.lower()
-    #     model_name = model_name.lower()
+        # 0. Convert corpus and model names to lowercase
+        corpus_col = corpus_col.lower()
+        model_col = model_name.lower()
 
-    #     # 1. Check that corpus_col is indeed a corpus collection
-    #     if not self.check_is_corpus(corpus_col):
-    #         return
+        # 1. Check that corpus_col is indeed a corpus collection
+        if not self.check_is_corpus(corpus_col):
+            return
 
-    #     # 2. Check that corpus_col has the model_name field
-    #     if not self.check_corpus_has_model(corpus_col, model_name):
-    #         return
+        # 2. Check that corpus_col has the model_col field
+        if not self.check_corpus_has_model(corpus_col, model_col):
+            return
 
-    #     # 3. Make request to Inferencer API to get thetas of text_to_infer
-    #     inf_resp = self.inferencer.infer_doc(text_to_infer=text_to_infer,
-    #                                          model_for_inference=model_name)
-    #     if inf_resp.status_code != 200:
-    #         self.logger.error(
-    #             f"-- -- Error attaining thetas from {text_to_infer} while executing query Q14. Aborting operation...")
-    #         return
+        # 3. Make request to NPTools API to get thetas of text_to_infer
+        # Get text (lemmas) of the document so its thetas can be inferred
+        lemmas_resp = self.nptooler.get_lemmas(text_to_lemmatize=text_to_infer, lang="es")
+        lemmas = lemmas_resp.results[0]['lemmas']
+        
+        self.logger.info(
+            f"-- -- Lemas attained in {lemmas_resp.time} seconds: {lemmas}")
+        
+        inf_resp = self.nptooler.get_thetas(text_to_infer=lemmas,
+                                    model_for_infer=model_name)
 
-    #     thetas = inf_resp.results[0]['thetas']
-    #     self.logger.info(
-    #         f"-- -- Thetas attained in {inf_resp.time} seconds: {thetas}")
+        if inf_resp.status_code != 200:
+            self.logger.error(
+                f"-- -- Error attaining thetas from {lemmas} while executing query Q5. Aborting operation...")
+            return
 
-    #     # 4. Customize start and rows
-    #     start, rows = self.custom_start_and_rows(start, rows, corpus_col)
+        thetas = inf_resp.results[0]['thetas']
+        
+        self.logger.info(
+            f"-- -- Thetas attained in {inf_resp.time} seconds: {thetas}")
 
-    #     # 5. Execute query
-    #     q14 = self.querier.customize_Q14(
-    #         model_name=model_name, thetas=thetas,
-    #         start=start, rows=rows)
-    #     params = {k: v for k, v in q14.items() if k != 'q'}
+        # 4. Customize start and rows
+        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
+        
+        # 5. Execute query
+        distance = "bhattacharyya"
+        q14 = self.querier.customize_Q14(
+            model_name=model_col, thetas=thetas, distance=distance,
+            start=start, rows=rows)
+        params = {k: v for k, v in q14.items() if k != 'q'}
+        
+        sc, results = self.execute_query(
+            q=q14['q'], col_name=corpus_col, **params)
+        
+        if sc != 200:
+            self.logger.error(
+                f"-- -- Error executing query Q14. Aborting operation...")
+            return
 
-    #     sc, results = self.execute_query(
-    #         q=q14['q'], col_name=corpus_col, **params)
+        # 6. Normalize scores
+        for el in results.docs:
+            el['score'] *= (100/(self.thetas_max_sum ^ 2))
 
-    #     if sc != 200:
-    #         self.logger.error(
-    #             f"-- -- Error executing query Q14. Aborting operation...")
-    #         return
-
-    #     # 6. Normalize scores
-    #     for el in results.docs:
-    #         el['score'] *= (100/(self.thetas_max_sum ^ 2))
-
-    #     return results.docs, sc
+        return results.docs, sc
 
     def do_Q15(self,
-               corpus_col: str,
-               doc_id: str) -> Union[dict, int]:
+        corpus_col: str,
+        doc_id: str
+    ) -> Union[dict, int]:
         """Executes query Q15.
 
         Parameters
@@ -1295,41 +1320,6 @@ class NPSolrClient(SolrClient):
             return
 
         return {'lemmas': results.docs[0]['lemmas']}, sc
-
-    def do_Q18(self,
-               corpus_col: str,
-               ids: str,
-               words: str,
-               start: str,
-               rows: str
-               ) -> Union[dict, int]:
-
-        # 0. Convert corpus name to lowercase
-        corpus_col = corpus_col.lower()
-
-        # 1. Check that corpus_col is indeed a corpus collection
-        if not self.check_is_corpus(corpus_col):
-            return
-
-        # 2. Execute query
-        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
-
-        q18 = self.querier.customize_Q18(
-            ids=ids.split(","),
-            words=words.split(","),
-            start=start,
-            rows=rows)
-        params = {k: v for k, v in q18.items() if k != 'q'}
-
-        sc, results = self.execute_query(
-            q=q18['q'], col_name=corpus_col, **params)
-
-        if sc != 200:
-            self.logger.error(
-                f"-- -- Error executing query Q18. Aborting operation...")
-            return
-
-        return results.docs, sc
     
     def do_Q20(
         self,
@@ -1341,6 +1331,26 @@ class NPSolrClient(SolrClient):
         embedding_model:str = "word2vec",
         lang:str = "es",
     ) -> Union[dict,int]:
+        """Executes query Q20. 
+        
+        Parameters
+        ----------
+        corpus_col: str
+            Name of the corpus collection
+        model_name: str
+            Name of the topic model to be used for the retrieval
+        search_word: str
+            Word to look documents similar to
+        start: int
+            Index of the first document to be retrieved
+        rows: int
+            Number of documents to be retrieved
+        
+        Returns
+        -------
+        response: dict
+            JSON object with the results of the query.
+        """
         
         # 0. Convert corpus and model names to lowercase
         corpus_col = corpus_col.lower()
@@ -1435,6 +1445,29 @@ class NPSolrClient(SolrClient):
         embedding_model:str = "word2vec",
         lang:str = "es",
     ) -> Union[dict,int]:
+        """
+        Executes query Q21.
+        
+        Parameters
+        ----------
+        corpus_col: str
+            Name of the corpus collection
+        search_doc: str
+            Document to look documents similar to
+        start: int
+            Index of the first document to be retrieved
+        rows: int
+            Number of documents to be retrieved
+        embedding_model: str
+            Name of the embedding model to be used
+        lang: str
+            Language of the text to be embedded
+        
+        Returns
+        -------
+        response: dict
+            JSON object with the results of the query.
+        """
         
         # 0. Convert corpus to lowercase
         corpus_col = corpus_col.lower()

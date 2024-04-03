@@ -6,6 +6,9 @@ from flask import Flask
 from pyfiglet import figlet_format
 from termcolor import cprint
 
+numba_logger = logging.getLogger('numba')
+numba_logger.setLevel(logging.WARNING)
+
 # Create Flask app
 app = Flask(__name__)
 # Deactivate the default mask parameter.

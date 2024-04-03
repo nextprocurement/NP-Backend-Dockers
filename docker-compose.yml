@@ -2,7 +2,7 @@ version: "3.8"
 
 networks:
   np-net:
-    name: ml4ds_net
+    name: ml4ds2_net
     external: true
 
 services:
@@ -14,15 +14,13 @@ services:
     environment:
       SOLR_URL: http://solr:8983
       NP_TOOLS_URL: http://np-tools:102
-      #INFERENCE_URL: http://np-inferencer:90
     depends_on:
       - solr
-      #- inferencer
+      - np-tools
     networks:
       - np-net
     volumes:
       - ./data/source:/data/source
-      #- ./data/inference:/data/inference
       - ./np-config:/config
 
   np-tools:

@@ -5,14 +5,14 @@ Author: Lorena Calvo-Bartolomé
 Date: 07/03/2024
 """
 
+import logging
 import pathlib
 import time
-from flask_restx import Namespace, Resource, reqparse
 
+from flask_restx import Namespace, Resource, reqparse
 from src.core.embedder import Embedder
 from src.core.lemmatizer import Lemmatizer
 
-import logging
 logging.basicConfig(level='DEBUG')
 logger = logging.getLogger('Embedder')
 
@@ -54,14 +54,38 @@ class getEmbedding(Resource):
         parser=get_embedding_parser,
         responses={
             200: 'Success: Embeddings generated successfully',
-            501: 'Lemmatization error: An error occurred while lemmatizing the text',
-            502: 'Embedding generation error: An error occurred while generating the embedding'
+            501: 'Model for embeddings not found: An error occurred while trying to find the model for embeddings',
+            502: 'Lemmas generation error: An error occurred while generating the lemmas',
+            503: 'Invalid embedding model: The embedding model provided is not valid',
+            504: 'Embeddings generation error: An error occurred while generating the embeddings'
         }
     )
     def get(self):
-        args = get_embedding_parser.parse_args()
 
         start_time = time.time()
+
+        args = get_embedding_parser.parse_args()
+
+        if args['embedding_model'] == 'word2vec':
+            # Get the path of the model (topic model) on the basis of which the embeddings will be generated
+            model_path = pathlib.Path(
+                "/data/source") / (args["model"])/("train_data") / ("model_w2v_corpus.model")
+
+            if not model_path.exists():
+                end_time = time.time() - start_time
+                sc = 501
+                responseHeader = {
+                    "status": sc,
+                    "time": end_time,
+                    "error": f"Model for inference not found: {model_path}"
+                }
+                response = {
+                    "responseHeader": responseHeader,
+                    "response": None
+                }
+                return response, sc
+
+            logger.info(f"-- --Model path: {model_path.as_posix()}")
 
         if args['embedding_model'] == 'word2vec':
             # If the embedding model is word2vec, lemmatize the text
@@ -72,7 +96,7 @@ class getEmbedding(Resource):
                 )
             except Exception as e:
                 end_time = time.time() - start_time
-                sc = 501
+                sc = 502
                 responseHeader = {
                     "status": sc,
                     "time": end_time,
@@ -83,11 +107,6 @@ class getEmbedding(Resource):
                     "response": None
                 }
                 return response, sc
-
-            # Get the path of the model (topic model) on the basis of which the embeddings will be generated
-            model_path = pathlib.Path(
-                "/data/source") / (args["model"])/("train_data") / ("model_w2v_corpus.model")
-            logger.info(f"Model path: {model_path.as_posix()}")
 
         elif args['embedding_model'] == 'bert':
             # If the embedding model is bert, no need to lemmatize the text
@@ -138,13 +157,13 @@ class getEmbedding(Resource):
                 "response": embeddings_str
             }
             logger.info(
-                f"String representation of embeddings generated successfully:{embeddings_str}")
+                f"-- -- String representation of embeddings generated successfully:{embeddings_str}")
 
             return response, sc
 
         except Exception as e:
             end_time = time.time() - start_time
-            sc = 502
+            sc = 504
             responseHeader = {
                 "status": sc,
                 "time": end_time,

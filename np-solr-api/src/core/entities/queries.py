@@ -1,5 +1,5 @@
 """
-This module defines a class with the EWB-specific queries used to interact with Solr.
+This module defines a class with the NP-Solr-API specific queries used to interact with Solr.
 
 
 Author: Lorena Calvo-Bartolomé
@@ -82,7 +82,7 @@ class Queries(object):
         # ================================================================
         # # Q7: getDocsWithString
         # ################################################################
-        # # Given a corpus collection, it retrieves the ids of the documents whose title contains such a string
+        # # Retrieves the ids of the documents in a corpus collections in which a given field contains a given string.
         # http://localhost:8983/solr/#/{collection}/query?q=title:{string}&q.op=OR&indent=true&useParams=
         # ================================================================
         self.Q7 = {
@@ -135,7 +135,7 @@ class Queries(object):
         }
 
         # ================================================================
-        # # Q14: getDocsSimilarToFreeText
+        # # Q14: getDocsSimilarToFreeTextTM
         # ################################################################
         # # Get documents that are semantically similar to a free text
         # according to a given model
@@ -155,16 +155,12 @@ class Queries(object):
             'rows': '{}'
         }
 
-        self.Q18 = {
-            'q': 'id:{}',
-            'fl': 'payload(bow,{})',
-            'start': '{}',
-            'rows': '{}'
-        }
-
         # If adding a new one, start numberation at 20
         # ================================================================
-        # # Q20: getDocsRelatedToDoc ##################################################################
+        # # Q20: getDocsRelatedToWord 
+        # # Get documents related to a word according to a given topic model.
+        # # To calculate this, we use a Word2Vec model trained on the same data as the topic model. In this model, the chemical descriptions of topics are embedded in the same space as words. When a word is inputted, it is embedded in this space, and the closest topic, based on its chemical description, is selected. Subsequently, the documents associated with that topic are retrieved.
+        # ##################################################################
         self.Q20 = {
             'q': "{{!vd f=tpc_embeddings vector=\"{}\" distance=\"{}\"}}",
             'fl': "id,score",
@@ -173,7 +169,9 @@ class Queries(object):
         }
         
         # ================================================================
-        # # Q21: getDocsRelatedToFreeTextEmb ##################################################################
+        # # Q21: getDocsSimilarToFreeTextEmb
+        # # Retrieve documents that are semantically similar to a given free text using BERT embeddings. The free text is represented by its BERT embeddings, and these embeddings for the documents in the collection are precalculated and indexed into Solr for efficient retrieval.
+        # ################################################################
         self.Q20 = {
             'q': "{{!vd f=embeddings vector=\"{}\" distance=\"{}\"}}",
             'fl': "id,title,score",
@@ -431,6 +429,7 @@ class Queries(object):
     def customize_Q14(self,
                       model_name: str,
                       thetas: str,
+                      distance: str,
                       start: str,
                       rows: str) -> dict:
         """Customizes query Q14 'getDocsSimilarToFreeText'
@@ -441,6 +440,8 @@ class Queries(object):
             Name of the topic model whose topic distribution is to be retrieved.
         thetas: str
             Topic distribution of the user's free text.
+        distance: str
+            Distance metric to be used.
         start: str
             Start value.
         rows: str
@@ -453,7 +454,7 @@ class Queries(object):
         """
 
         custom_q14 = {
-            'q': self.Q14['q'].format(model_name, thetas),
+            'q': self.Q14['q'].format(model_name, thetas, distance),
             'fl': self.Q14['fl'].format(model_name),
             'start': self.Q14['start'].format(start),
             'rows': self.Q14['rows'].format(rows),
@@ -480,21 +481,6 @@ class Queries(object):
             'fl': self.Q15['fl'],
         }
         return custom_q15
-
-    def customize_Q18(self,
-                      ids: str,
-                      words: str,
-                      start: str,
-                      rows: str) -> dict:
-
-        custom_q18 = {
-            'q':  self.Q18['q'].format(' & id:'.join(ids)),
-            'fl': 'id, ' + ', '.join(self.Q18['fl'].format(word) for word in words),
-            'start': self.Q18['start'].format(start),
-            'rows': self.Q18['rows'].format(rows),
-        }
-
-        return custom_q18
 
     def customize_Q20(
         self,
@@ -537,7 +523,7 @@ class Queries(object):
         start: str,
         rows: str
     ) -> dict:
-        """Customizes query Q21 'getDocsRelatedToFreeTextEmb'
+        """Customizes query Q21 'getDocsSimilarToFreeTextEmb'
 
         Parameters
         ----------

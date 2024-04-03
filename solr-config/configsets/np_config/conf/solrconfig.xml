@@ -1103,7 +1103,6 @@
      <queryParser name="myparser" class="com.mycompany.MyQParserPlugin"/>
     -->
   
-  <queryParser name="vp" class="com.ewb.VectorQParserPlugin" />
   <queryParser name="vd" class="com.np_solr.VectorQSimParserPlugin" />
 
 

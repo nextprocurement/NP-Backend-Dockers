@@ -38,19 +38,23 @@ class NPToolsClient(Client):
 
     def __init__(
         self,
-        logger: logging.Logger
+        logger: logging.Logger,
+        timeout: int = 120
     ) -> None:
         """
         Parameters
         ----------
         logger : logging.Logger
             The logger object to log messages and errors.
+        timeout : int, optional
+            The timeout of the request in seconds, by default 120.
         """
 
         super().__init__(logger, "NP Tools Client")
 
         # Get the NP Tools URL from the environment variables
         self.nptools_url = os.environ.get('NP_TOOLS_URL')
+        self.timeout = timeout
 
         return
 
@@ -58,7 +62,7 @@ class NPToolsClient(Client):
         self,
         type: str,
         url: str,
-        timeout: int = 10,
+        timeout: int = 120,
         **params
     ) -> NPToolsResponse:
         """Sends a request to the Inferencer API and returns an object of the NPToolsResponse class.
@@ -129,18 +133,117 @@ class NPToolsClient(Client):
                 'model': model_for_embedding,
                 'lang': lang
             }
-            
+
         encoded_params = urlencode(params_)
 
         url_ = '{}/embedder/getEmbedding/?{}'.format(
             self.nptools_url, encoded_params)
-        
-        self.logger.info(f"URL: {url_}")
+
+        self.logger.info(f"-- -- get_embedding - URL: {url_}")
 
         # Send request to NPtooler
         resp = self._do_request(
-            type="get", url=url_, timeout=120, headers=headers_)
-        
-        self.logger.info(f"Response: {resp}")
-        
+            type="get", url=url_, timeout=self.timeout, headers=headers_)
+
+        self.logger.info(f"-- -- get_embedding - Response: {resp}")
+
+        return resp
+
+    def get_lemmas(
+        self,
+        text_to_lemmatize: str,
+        lang: str,
+    ) -> NPToolsResponse:
+        """Get the lemmas of a text.
+
+        Parameters
+        ----------
+        text_to_lemmatize : str
+            The word to lemmatize.
+        embedding_model : str
+        lang : str
+            The language of the text to be lemmatized (es/en)
+
+        Returns
+        -------
+        NPToolsResponse: NPToolsResponse
+            An object of the NPToolsResponse class.
+        """
+
+        headers_ = {'Accept': 'application/json'}
+
+        params_ = {
+            'text_to_lemmatize': text_to_lemmatize,
+            'lang': lang
+        }
+
+        encoded_params = urlencode(params_)
+
+        url_ = '{}/lemmatizer/getLemmas/?{}'.format(
+            self.nptools_url, encoded_params)
+
+        self.logger.info(f"-- -- get_lemmas - URL: {url_}")
+
+        # Send request to NPtooler
+        resp = self._do_request(
+            type="get", url=url_, timeout=self.timeout, headers=headers_)
+
+        self.logger.info(f"-- -- get_lemmas - Response: {resp}")
+
+        return resp
+
+    def get_thetas(
+        self,
+        text_to_infer: str,
+        model_for_infer: str,
+    ) -> NPToolsResponse:
+        """Get the thetas representation for a document based on a given trained topic model. 
+        The format of the response from the NP Tools API is as follows:
+
+        {
+            "responseHeader": {
+                "status": 200,
+                "time": 2.7594828605651855
+            },
+            "response": [
+                {
+                "id": 0,
+                "thetas": "t0|188 t1|244 t2|210 t3|249 t4|109"
+                }
+            ]
+        }
+
+        Parameters
+        ----------
+        text_to_infer : str
+            Text to be inferred.
+        model_for_infer : str
+            The model to be used for inference.
+
+        Returns
+        -------
+        NPToolsResponse: NPToolsResponse
+            An object of the NPToolsResponse class.
+        """
+
+        headers_ = {'Accept': 'application/json'}
+
+        params_ = {
+            'text_to_infer': text_to_infer,
+            'model_for_infer': model_for_infer,
+        }
+
+        encoded_params = urlencode(params_)
+
+        url_ = '{}/inferencer/inferDoc/?{}'.format(
+            self.nptools_url, encoded_params)
+
+        self.logger.info(f"-- -- get_thetas - URL: {url_}")
+
+        # Send request to NPtooler
+        resp = self._do_request(
+            type="get", url=url_, timeout=self.timeout, headers=headers_)
+
+        self.logger.info(f"-- -- get_thetas - Response: {resp}")
+
         return resp
