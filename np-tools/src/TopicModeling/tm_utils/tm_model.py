@@ -13,8 +13,8 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sparse
 from sparse_dot_topn import awesome_cossim_topn
-from src.Embeddings.embedder import Embedder
-from .topic_labeller import TopicLabeller
+#from src.Embeddings.embedder import Embedder
+#from .topic_labeller import TopicLabeller
 
 
 class TMmodel(object):
@@ -141,6 +141,7 @@ class TMmodel(object):
         self._ndocs_active = np.array((self._thetas != 0).sum(0).tolist()[0])
         self._tpc_descriptions = [el[1]
                                   for el in self.get_tpc_word_descriptions()]
+        self.calculate_gensim_dic()
         self.calculate_topic_coherence()  # cohrs_aux
         self._tpc_labels = [el[1] for el in self.get_tpc_labels()]
         self._tpc_embeddings = self.get_tpc_word_descriptions_embeddings()
@@ -374,6 +375,34 @@ class TMmodel(object):
             self._topic_entropy = np.load(
                 self._TMfolder.joinpath('topic_entropy.npy'))
 
+    def calculate_gensim_dic(self):
+
+        # TODO: Check this is working when Mallet is not being used
+        corpusFile = self._TMfolder.parent.parent.joinpath(
+            'train_data/corpus.txt')
+
+        with corpusFile.open("r", encoding="utf-8") as f:
+            corpus = [line.rsplit(" 0 ")[1].strip().split() for line in f.readlines(
+            ) if line.rsplit(" 0 ")[1].strip().split() != []]
+
+        # Import necessary modules for coherence calculation with Gensim
+        from gensim.corpora import Dictionary
+        from gensim.models.coherencemodel import CoherenceModel
+
+        # Create dictionary
+        dictionary = Dictionary(corpus)
+
+        # Save dictionary
+        GensimFile = self._TMfolder.parent.joinpath(
+            'dictionary.gensim')
+        dictionary.save_as_text(GensimFile)
+
+        with self._TMfolder.parent.joinpath('vocabulary.txt').open('w', encoding='utf8') as fout:
+            fout.write(
+                '\n'.join([dictionary[idx] for idx in range(len(dictionary))]))
+
+        return
+
     def calculate_topic_coherence(self, metrics=["c_v", "c_npmi"], n_words=15, only_one=True):
 
         # Load topic information
@@ -494,7 +523,7 @@ class TMmodel(object):
 
         return self._alphas, self._betas, self._thetas, self._vocab, self._sims, self._coords
 
-    def get_tpc_word_descriptions(self, n_words=100, tfidf=True, tpc=None):
+    def get_tpc_word_descriptions(self, n_words=15, tfidf=True, tpc=None):
         """returns the chemical description of topics
 
         Parameters
@@ -589,25 +618,13 @@ class TMmodel(object):
 
         corpus_path = self._TMfolder.parent.parent.joinpath(
             'train_data/corpus.txt')
-        model_path = corpus_path.parent / f"model_w2v_{corpus_path.stem}.model"
 
-        if model_path.exists():
-            tpc_embeddings = emb.infer_embeddings(
-                embed_from=embed_from,
-                method="word2vec",
-                do_train_w2vec=False,
-                model_path=model_path,
-                corpus_file=self._TMfolder.parent.parent.joinpath(
-                    'train_data/corpus.txt')
-            )
-        else:
-            tpc_embeddings = emb.infer_embeddings(
-                embed_from=embed_from,
-                method="word2vec",
-                do_train_w2vec=True,
-                corpus_file=self._TMfolder.parent.parent.joinpath(
-                    'train_data/corpus.txt')
-            )
+        tpc_embeddings = emb.infer_embeddings(
+            embed_from=embed_from,
+            method="word2vec",
+            do_train_w2vec=True,
+            corpus_file=corpus_path
+        )
 
         return tpc_embeddings
 

@@ -9,9 +9,7 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from tqdm import trange
 from umap import UMAP
 import shutil
-from src.core.TopicModeling.BaseModel import BaseModel
-from src.core.TopicModeling.tm_utils.tm_model import TMmodel
-from src.core.TopicModeling.tm_utils.utils import file_lines
+from .BaseModel import BaseModel
 
 
 class BERTopicModel(BaseModel):

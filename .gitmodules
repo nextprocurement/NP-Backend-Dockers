@@ -1,6 +1,3 @@
-[submodule "solr-plugins/solr-ewb-jensen-shanon-distance-plugin"]
-	path = solr-plugins/solr-ewb-jensen-shanon-distance-plugin
-	url = https://github.com/Nemesis1303/solr-ewb-jensen-shanon-distance-plugin.git
 [submodule "solr-plugins/NP-solr-dist-plugin"]
 	path = solr-plugins/NP-solr-dist-plugin
 	url = https://github.com/nextprocurement/NP-solr-dist-plugin.git

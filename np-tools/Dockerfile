@@ -57,6 +57,15 @@ RUN pip install "dask[complete]"
 RUN python -m spacy download es_dep_news_trf
 RUN python -m spacy download en_core_web_trf
 
+# Clone the Mallet repository and build it
+RUN mkdir -p /app && \
+    git clone https://github.com/mimno/Mallet.git /app/Mallet && \
+    cd /app/Mallet && \
+    ant
+    
+# Change back to the working directory
+WORKDIR /np-tools
+
 # Download and cache the sentence transformer model
 ARG MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${MODEL_NAME}')"

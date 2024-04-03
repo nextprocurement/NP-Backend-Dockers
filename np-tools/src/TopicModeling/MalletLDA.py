@@ -1,4 +1,5 @@
 import logging
+import pathlib
 import shutil
 from pathlib import Path
 from subprocess import check_output
@@ -9,9 +10,9 @@ from scipy import sparse
 from sklearn.preprocessing import normalize
 from tqdm import trange
 
-from src.core.TopicModeling.BaseModel import BaseModel
-from src.core.TopicModeling.tm_utils.tm_model import TMmodel
-from src.core.TopicModeling.tm_utils.utils import file_lines
+from .BaseModel import BaseModel
+from src.TopicModeling.tm_utils.tm_model import TMmodel
+from src.TopicModeling.tm_utils.utils import file_lines
 
 
 class MalletLDAModel(BaseModel):
@@ -54,29 +55,33 @@ class MalletLDAModel(BaseModel):
     def _create_corpus_mallet(
         self,
         texts: List[str],
-        predict: bool = False
+        ids: List[int],
+        predict: bool = False,
+        path_model: str = None,
+        save_temp = True
     ):
         """
         Generate .txt and .mallet files to train LDA model.
         Returns path to generated .mallet file.
         """
         # Define directories
-        # texts_txt_path = name.joinpath("corpus.txt")
-        # texts_mallet_path = name.joinpath("corpus.mallet")
-        if predict:
-            texts_txt_path = self._temp_mallet_dir.joinpath(
-                "corpus_predict.txt")
-            texts_mallet_path = self._temp_mallet_dir.joinpath(
-                "corpus_predict.mallet")
+        if save_temp:
+            path_save = self._temp_mallet_dir
         else:
-            texts_txt_path = self._temp_mallet_dir.joinpath("corpus_train.txt")
-            texts_mallet_path = self._temp_mallet_dir.joinpath(
+            path_save = pathlib.Path(path_model) / ("infer_data")
+        if predict:
+            texts_txt_path = path_save.joinpath(
+                "corpus_predict.txt")
+            texts_mallet_path = path_save.joinpath("corpus_predict.mallet")
+        else:
+            texts_txt_path = path_save.joinpath("corpus_train.txt")
+            texts_mallet_path = path_save.joinpath(
                 "corpus_train.mallet")
 
         # Create corpus.txt
         self.logger.info("Creating corpus.txt...")
         with texts_txt_path.open("w", encoding="utf8") as fout:
-            for i, t in enumerate(texts):
+            for i, t in zip(ids, texts):
                 fout.write(f"{i} 0 {t}\n")
         self.logger.info(f"corpus.txt created")
 
@@ -90,36 +95,33 @@ class MalletLDAModel(BaseModel):
             # f"--remove-stopwords "
         )
         if predict:
-            cmd += f"--use-pipe-from {self._temp_mallet_dir.joinpath('corpus_train.mallet')}"
+            inferencer_mallet = pathlib.Path(path_model) / "train_data" / "corpus.mallet" #/ "model_data" / "inferencer.mallet"
+            cmd += f"--use-pipe-from {inferencer_mallet}"
         check_output(args=cmd, shell=True)
+        self.logger.info(f"Running command: {cmd}")
         self.logger.info(f"corpus.mallet created")
 
         # Move info to desired location
-        if predict:
-            name = self._infer_data_dir
-        else:
-            name = self._train_data_dir
-        texts_txt_path = shutil.copy(
-            texts_txt_path, name.joinpath("corpus.txt"))
-        texts_mallet_path = shutil.copy(
-            texts_mallet_path, name.joinpath("corpus.mallet")
-        )
-        # texts_txt_path = shutil.move(texts_txt_path, name.joinpath("corpus.txt"))
-        # texts_mallet_path = shutil.move(texts_mallet_path, name.joinpath("corpus.mallet"))
-        # texts_txt_path = name.joinpath("corpus.txt")
-        # texts_mallet_path = name.joinpath("corpus.mallet")
+        if save_temp:
+            name = self._infer_data_dir if predict else self._train_data_dir
+            texts_txt_path, texts_mallet_path = shutil.copy(
+                texts_txt_path, name.joinpath("corpus.txt")), shutil.copy(
+                texts_mallet_path, name.joinpath("corpus.mallet"))
+
         return Path(texts_mallet_path)
 
     def _model_train(
         self,
         texts: List[str],
+        ids: List[int],
         num_topics: int,
         alpha: float = 5.0,
         optimize_interval: int = 10,
         num_threads: int = 4,
         num_iterations: int = 1000,
         doc_topic_thr: float = 0.0,
-        texts_test: List[str] = None
+        texts_test: List[str] = None,
+        ids_test: List[int] = None
     ):
         """
         Train LDA model
@@ -148,14 +150,14 @@ class MalletLDAModel(BaseModel):
         config_file = self._train_data_dir.joinpath("train.config")
 
         # Generate corpus.mallet
-        texts_mallet_path = self._create_corpus_mallet(texts, predict=False)
+        texts_mallet_path = self._create_corpus_mallet(texts, ids, predict=False)
 
         # Save test data if available
         if texts_test is not None:
             texts_test_path = self._temp_mallet_dir.joinpath("corpus_test.txt")
             self.logger.info("Creating Test corpus.txt...")
             with texts_test_path.open("w", encoding="utf8") as fout:
-                for i, t in enumerate(texts_test):
+                for i, t in zip(ids_test,texts_test):
                     fout.write(f"{i} 0 {t}\n")
             self.logger.info(f"Test corpus.txt created")
             texts_test_path = shutil.copy(
@@ -241,7 +243,13 @@ class MalletLDAModel(BaseModel):
 
         return pred, topic_keys
 
-    def _model_predict(self, texts: List[str]):
+    def _model_predict(
+        self, 
+        texts: List[str],
+        path_model: str = None,
+        path_mallet: str = None,
+        save_temp = True
+    ):
         """
         Infer doctopic file of corpus using ntopics model
 
@@ -252,35 +260,53 @@ class MalletLDAModel(BaseModel):
 
         """
         # Define directories
-        predicted_doctopic = self._infer_data_dir.joinpath(
+        if save_temp:
+            temp_mallet_dir = self._temp_mallet_dir.joinpath('predicted_topics.txt')
+            predicted_doctopic = self._infer_data_dir.joinpath(
             "predicted_topics.txt")
-        # Get inferencer
-        if self._temp_mallet_dir.joinpath("inferencer.mallet").exists():
-            dir_inferencer = self._temp_mallet_dir.joinpath(
-                "inferencer.mallet")
-        elif self._model_data_dir.joinpath("inferencer.mallet").exists():
-            dir_inferencer = self._model_data_dir.joinpath("inferencer.mallet")
         else:
-            self.logger.warning("There is no inferencer. Train model first.")
-            return
+            temp_mallet_dir = pathlib.Path(path_model) / ("model_data") /'predicted_topics.txt'
+            predicted_doctopic = temp_mallet_dir
+        
+        # Get inferencer
+        if path_model:
+            dir_inferencer = pathlib.Path(path_model) / "model_data" / "inferencer.mallet"
+            if not dir_inferencer.is_file():
+                self.logger.warning(f"Path provided does not leead to inferencer. Train model first.")
+                return
+        else:
+            if self._temp_mallet_dir.joinpath("inferencer.mallet").exists():
+                dir_inferencer = self._temp_mallet_dir.joinpath(
+                    "inferencer.mallet")
+            elif self._model_data_dir.joinpath("inferencer.mallet").exists():
+                dir_inferencer = self._model_data_dir.joinpath("inferencer.mallet")
+            else:
+                self.logger.warning("There is no inferencer. Train model first.")
+                return
 
         # Generate corpus.mallet
         texts_mallet_infer_path = self._create_corpus_mallet(
-            texts, predict=True)
+            texts, 
+            ids = list(range(len(texts))),
+            predict=True,
+            path_model=path_model,
+            save_temp=save_temp)
+        
+        if not path_mallet:
+            path_mallet = self._mallet_path
 
         self.logger.info("Infer topics")
+        
         # Infer topics
         cmd = (
-            f"{self._mallet_path} infer-topics "
+            f"{path_mallet} infer-topics "
             f"--inferencer {dir_inferencer} "
             f"--input {texts_mallet_infer_path} "
-            f"--output-doc-topics {self._temp_mallet_dir.joinpath('predicted_topics.txt')} "
+            f"--output-doc-topics {temp_mallet_dir} "
         )
         check_output(args=cmd, shell=True)
-        shutil.copy(
-            f"{self._temp_mallet_dir.joinpath('predicted_topics.txt')}",
-            predicted_doctopic,
-        )
+        if save_temp:
+            shutil.copy(temp_mallet_dir,predicted_doctopic)
 
         pred = np.loadtxt(predicted_doctopic,
                           usecols=range(2, self.num_topics + 2))
@@ -295,8 +321,8 @@ class MalletLDAModel(BaseModel):
                               dtype=np.float32, usecols=cols)
 
         # Create figure to check thresholding is correct
-        self._SaveThrFig(
-            thetas32, self._model_data_dir.joinpath('thetasDist.pdf'))
+        #self._SaveThrFig(
+        #    thetas32, self._model_data_dir.joinpath('thetasDist.pdf'))
 
         # Set to zeros all thetas below threshold, and renormalize
         thetas32[thetas32 < self._thetas_thr] = 0

@@ -7,7 +7,7 @@ Date: 07/03/2024
 
 import pathlib
 import time
-from flask_restx import Namespace, Resource, reqparse, fields, marshal
+from flask_restx import Namespace, Resource, reqparse
 
 from src.core.embedder import Embedder
 from src.core.lemmatizer import Lemmatizer
@@ -83,17 +83,17 @@ class getEmbedding(Resource):
                     "response": None
                 }
                 return response, sc
-            
+
             # Get the path of the model (topic model) on the basis of which the embeddings will be generated
             model_path = pathlib.Path(
                 "/data/source") / (args["model"])/("train_data") / ("model_w2v_corpus.model")
             logger.info(f"Model path: {model_path.as_posix()}")
-            
+
         elif args['embedding_model'] == 'bert':
             # If the embedding model is bert, no need to lemmatize the text
             text_to_embed = args['text_to_embed']
             model_path = None
-            
+
         elif args['embedding_model'] not in ['word2vec', 'bert']:
             end_time = time.time() - start_time
             sc = 503
