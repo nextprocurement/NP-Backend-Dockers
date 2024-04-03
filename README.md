@@ -20,9 +20,7 @@
 
 This multi-container application is orchestrated using a docker-compose script, connecting all services through the `np-net` network.
 
-![Python Dockers](https://github.com/nextprocurement/NP-Backend-Dockers/blob/main/static/Images/np_1.png)
-
-<img src="[https://mma.prnewswire.com/media/1513369/Educative_Logo.jpg](https://github.com/nextprocurement/NP-Backend-Dockers/blob/main/static/Images/np_1.png)"  width="600" height="300">
+<img src='static/Images/np_1.png' width='500'>
 
 ## ⚙️ Steps for deployment
 
@@ -46,11 +44,11 @@ This multi-container application is orchestrated using a docker-compose script, 
 
 4. Create folder ``data`` and copy model information into it. It should looks as follows:
 
-    ![Data folder structure](https://github.com/nextprocurement/NP-Backend-Dockers/blob/main/static/Images/np_data_folder_structure.png)
+    <img src='static/Images/np_data_folder_structure.png' width='750'>
 
     An example of what should be in the ``data`` folder is available [here](https://drive.google.com/file/d/12sM6sBgaNwAquUiH656LgzT_Iwd4apb-/view?usp=drive_link).
 
-5. Create a network that you can use and replace the ``ml4ds2_net`` in the ``docker-compose.yml`` with the name of your new network:
+6. Create a network that you can use and replace the ``ml4ds2_net`` in the ``docker-compose.yml`` with the name of your new network:
 
     ```docker
     networks:
@@ -59,23 +57,23 @@ This multi-container application is orchestrated using a docker-compose script, 
         external: true
     ```
 
-6. Start the services:
+7. Start the services:
 
     ```bash
     docker-compose up -d
     ```
 
-7. Check all the services are working:
+8. Check all the services are working:
 
     ```bash
     docker ps
     ```
 
-8. Check that the `NP-solr-dist-plugin` plugin have been mounted properly in Solr. For this, go to Solr (it should be available at [http://your_server_name:8984/solr/#/](http://your_server_name:8984/solr/#/) and create a `test` collection from the following view using the ``np_config`` config set. If everything worked fine, delete the test collection.
+9. Check that the `NP-solr-dist-plugin` plugin have been mounted properly in Solr. For this, go to Solr (it should be available at [http://your_server_name:8984/solr/#/](http://your_server_name:8984/solr/#/) and create a `test` collection from the following view using the ``np_config`` config set. If everything worked fine, delete the test collection.
 
-    ![Test Solr](https://github.com/nextprocurement/NP-Backend-Dockers/blob/main/static/Images/np_test_solr.png)
+    <img src='static/Images/np_test_solr.png' width='400'>
 
-    > If you encounter any problems, write an email to [lcalvo@pa.uc3m.es](mailto:lcalvo@pa.uc3m.es).
+> If you encounter any problems, write an email to [lcalvo@pa.uc3m.es](mailto:lcalvo@pa.uc3m.es).
 
 
 ## 🧩 Main components
