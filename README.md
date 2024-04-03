@@ -22,8 +22,7 @@ This multi-container application is orchestrated using a docker-compose script, 
 
 ![Python Dockers](https://github.com/nextprocurement/NP-Backend-Dockers/blob/main/static/Images/np_1.png)
 
-<img src="[drawing.jpg](https://github.com/nextprocurement/NP-Backend-Dockers/blob/main/static/Images/np_1.png)" alt="drawing" style="width:100px;"/>
-
+<img src="[https://mma.prnewswire.com/media/1513369/Educative_Logo.jpg](https://github.com/nextprocurement/NP-Backend-Dockers/blob/main/static/Images/np_1.png)"  width="600" height="300">
 
 ## ⚙️ Steps for deployment
 
