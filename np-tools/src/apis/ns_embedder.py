@@ -8,6 +8,7 @@ Date: 07/03/2024
 import logging
 import pathlib
 import time
+import os
 
 from flask_restx import Namespace, Resource, reqparse
 from src.core.embedder import Embedder
@@ -68,16 +69,25 @@ class getEmbedding(Resource):
 
         if args['embedding_model'] == 'word2vec':
             # Get the path of the model (topic model) on the basis of which the embeddings will be generated
-            model_path = pathlib.Path(
-                "/data/source") / (args["model"])/("train_data") / ("model_w2v_corpus.model")
-
-            if not model_path.exists():
+            look_dir = pathlib.Path("/data/source")
+            tm_path = None
+            for folder in os.listdir(look_dir):
+                if folder.lower() == args["model"].lower():
+                    tm_path = folder
+            
+            if tm_path is not None:
+                model_path = look_dir / tm_path /("train_data") / ("model_w2v_corpus.model")
+                logger.info(
+                    f"-- -- Model for embeddings: {model_path.as_posix()}"
+                )
+            else:
+                model_path = args["model"]
                 end_time = time.time() - start_time
                 sc = 501
                 responseHeader = {
                     "status": sc,
                     "time": end_time,
-                    "error": f"Model for inference not found: {model_path}"
+                    "error": f"Model for embeddings not found: {model_path}"
                 }
                 response = {
                     "responseHeader": responseHeader,

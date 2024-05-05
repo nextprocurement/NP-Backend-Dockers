@@ -5,6 +5,7 @@ Author: Lorena Calvo-Bartolomé
 Date: 19/03/2024
 """
 
+import os
 import pathlib
 import time
 from flask_restx import Namespace, Resource, reqparse
@@ -54,9 +55,21 @@ class InferDoc(Resource):
         args = infer_doc_parser.parse_args()
 
         text_to_infer = args['text_to_infer']
-        model_for_infer = pathlib.Path(
-            "/data/source") / (args["model_for_infer"])
-        if not model_for_infer.exists():
+        
+        # We look for the model in case the user did not write the name properly
+        look_dir = pathlib.Path("/data/source")
+        model_path = None
+        for folder in os.listdir(look_dir):
+            if folder.lower() == args["model_for_infer"].lower():
+                model_path = folder
+                logger.info(f"-- -- Model found at: {model_path}")
+
+        if model_path is not None:
+            model_for_infer = look_dir / model_path
+            logger.info(
+            f"-- -- Model for inference: {model_for_infer.as_posix()}")
+        else:        
+            model_for_infer = args["model_for_infer"]
             logger.error(
                 f"-- -- Model for inference not found: {model_for_infer}")
             end_time = time.time() - start_time
@@ -71,9 +84,6 @@ class InferDoc(Resource):
                 "response": None
             }
             return response, sc
-
-        logger.info(
-            f"-- -- Model for inference: {model_for_infer.as_posix()}")
 
         # Perform inference
         try:
