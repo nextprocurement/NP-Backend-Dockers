@@ -71,6 +71,12 @@ ARG MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${MODEL_NAME}')"
 RUN python initialize_st.py
 
+# This is for the CPV model
+RUN mkdir -p /models && \
+    python -c "from huggingface_hub import hf_hub_download; \
+    hf_hub_download(repo_id='erick4556/cpv-3digits', filename='model.skops', cache_dir='/models'); \
+    hf_hub_download(repo_id='erick4556/cpv-3digits', filename='vectorizer.skops', cache_dir='/models')"
+
 EXPOSE 102
 
 CMD ["python", "app.py"]

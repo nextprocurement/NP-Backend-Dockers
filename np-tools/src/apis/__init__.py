@@ -3,6 +3,7 @@ from flask_restx import Api
 from .ns_embedder import api as ns1
 from .ns_inferencer import api as ns2
 from .ns_lemmas import api as ns3
+from .ns_predict_cpv import api as ns4
 
 api = Api(
     title="NP Tools API",
@@ -13,3 +14,4 @@ api = Api(
 api.add_namespace(ns1, path='/embedder')
 api.add_namespace(ns2, path='/inferencer')
 api.add_namespace(ns3, path='/lemmatizer')
+api.add_namespace(ns4, path='/predict_cpv')
