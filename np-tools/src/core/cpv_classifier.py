@@ -1,5 +1,5 @@
 import glob
-from skops.io import load
+from skops.io import load, get_untrusted_types
 import spacy
 import logging
 from config.config import Config
@@ -38,9 +38,21 @@ class CpvClassifier(object):
             model_path = model_files[0]
             vectorizer_path = vectorizer_files[0]
 
-            model = load(model_path)
-            vectorizer = load(vectorizer_path)
-            self.logger.info("Model and vectorizer loaded successfully")
+            # Get untrusted types if necessary
+            untrusted_types_model = get_untrusted_types(file=model_path)
+            untrusted_types_vectorizer = get_untrusted_types(
+                file=vectorizer_path)
+            self.logger.info(
+                f"-- -- Untrusted types for model: {untrusted_types_model}")
+            self.logger.info(
+                f"-- -- Untrusted types for vectorizer: {untrusted_types_vectorizer}")
+
+            # Load the model and vectorizer
+            model = load(model_path, trusted=untrusted_types_model)
+            vectorizer = load(
+                vectorizer_path, trusted=untrusted_types_vectorizer)
+            self.logger.info("-- -- Model and vectorizer loaded successfully")
+
             return model, vectorizer
 
         except Exception as e:
