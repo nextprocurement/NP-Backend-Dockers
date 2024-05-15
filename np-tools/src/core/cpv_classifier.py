@@ -2,7 +2,7 @@ import glob
 from skops.io import load, get_untrusted_types
 import spacy
 import logging
-from config.config import Config
+from ..config.config import Config
 
 
 class CpvClassifier(object):
