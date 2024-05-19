@@ -31,10 +31,7 @@ class predictCpv(Resource):
         parser=cpv_parser,
         responses={
             200: 'Success: CPV code generated successfully',
-            404: 'Not Found: Model or vectorizer required for prediction not found',
-            500: 'Internal Server Error: An unexpected error occurred during the prediction process',
-            502: "Error: Bad Gateway",
-            503: 'Service Unavailable: Model or vectorizer not loaded properly'
+            502: "CPV code generation error",
         }
 
     )
@@ -60,7 +57,7 @@ class predictCpv(Resource):
                 "response": result
             }
             logger.info(
-                f"-- -- CPV code generated successfully:{result}")
+                f"-- -- CPV code generated successfully: {result}")
 
             return response, sc
 
