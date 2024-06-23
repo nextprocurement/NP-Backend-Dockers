@@ -206,8 +206,11 @@ class Model(object):
         # Get ids of documents kept in the tr corpus
         if tr_config["trainer"].lower() == "mallet":
             def process_line(line):
-                id_ = line.rsplit('\t0\t')[0].strip()
-                id_ = int(id_.strip('"'))
+                id_ = line.rsplit('\t0\t')[0].strip().strip('"')
+                try:
+                    id_ = int(id_.strip('"'))
+                except Exception as e:
+                    self._logger.info("-- -- Id is not an integer. Keeping as string...")
                 return id_
             with open(self.path_to_model.joinpath("train_data").joinpath("corpus.txt"), encoding="utf-8") as file:
                 ids_corpus = [process_line(line) for line in file]

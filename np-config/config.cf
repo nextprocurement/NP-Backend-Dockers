@@ -37,9 +37,15 @@ max_sequence_length=384
 
 # There will be one of this for each corpus avaialable
 [np_all-config]
-id_field=id_tm
+id_field=identifier
 title_field=title
 date_field=date
-MetadataDisplayed=id_tm,title
-SearcheableField=id_tm,title
+MetadataDisplayed=identifier,title
+SearcheableField=identifier,title
 
+[place_all-config]
+id_field=identifier
+title_field=title
+date_field=date
+MetadataDisplayed=identifier,title
+SearcheableField=identifier,title

@@ -139,7 +139,7 @@ class Inferencer(object):
             return
 
         # Load model
-        path_pickle = model_for_infer_path / 'model.pickle'
+        path_pickle = model_for_infer_path / 'model_data/model.pickle'
         model = BaseModel.load_model(
             path=path_pickle.as_posix()
         )

@@ -138,7 +138,7 @@
 
   <!-- NP fields  -->
   <field name="summary" type="text_general" indexed="true" stored="true" multiValued="false" />
-  <field name="cpv" type="text_general" indexed="true" stored="true" multiValued="false" />
+  <field name="cpv" type="text_general" indexed="true" stored="true" multiValued="true" />
   <field name="lot_name" type="text_general" indexed="true" stored="true" multiValued="false" />
   <field name="text" type="text_general" indexed="true" stored="true" multiValued="false" />
   <field name="lang" type="text_general" indexed="true" stored="true" multiValued="false" />

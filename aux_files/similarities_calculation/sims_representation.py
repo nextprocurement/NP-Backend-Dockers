@@ -55,7 +55,7 @@ def main():
 
     def process_line(line):
         id_ = line.rsplit('\t0\t')[0].strip()
-        id_ = int(id_.strip('"'))
+        id_ = id_.strip('"')
         return id_
 
     with open(pathlib.Path(args.path_tmmodel).parent.parent.joinpath("train_data").joinpath("corpus.txt"), encoding="utf-8") as file:

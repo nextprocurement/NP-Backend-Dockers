@@ -58,6 +58,7 @@ class MalletLDAModel(BaseModel):
         ids: List[int],
         predict: bool = False,
         path_model: str = None,
+        mallet_path: str = None,
         save_temp = True
     ):
         """
@@ -77,6 +78,9 @@ class MalletLDAModel(BaseModel):
             texts_txt_path = path_save.joinpath("corpus_train.txt")
             texts_mallet_path = path_save.joinpath(
                 "corpus_train.mallet")
+            
+        if not mallet_path:
+            mallet_path = self._mallet_path
 
         # Create corpus.txt
         self.logger.info("Creating corpus.txt...")
@@ -88,7 +92,7 @@ class MalletLDAModel(BaseModel):
         # Convert corpus.txt to corpus.mallet
         self.logger.info("Creating corpus.mallet...")
         cmd = (
-            f"{self._mallet_path} import-file "
+            f"{mallet_path} import-file "
             f"--input {texts_txt_path} "
             f"--output {texts_mallet_path} "
             f"--keep-sequence "
@@ -259,6 +263,8 @@ class MalletLDAModel(BaseModel):
             Preprocessed corpus as a list of strings
 
         """
+        self.logger.info(f"Mallet path from args: {path_mallet}")
+        
         # Define directories
         if save_temp:
             temp_mallet_dir = self._temp_mallet_dir.joinpath('predicted_topics.txt')
@@ -283,6 +289,14 @@ class MalletLDAModel(BaseModel):
             else:
                 self.logger.warning("There is no inferencer. Train model first.")
                 return
+            
+        if not path_mallet:
+            self.logger.info("Mallet path not provided. Using default path.")
+            path_mallet = self._mallet_path
+        
+        self.logger.info(f"Path to mallet: {path_mallet}")
+
+        self.logger.info("Infer topics")
 
         # Generate corpus.mallet
         texts_mallet_infer_path = self._create_corpus_mallet(
@@ -290,12 +304,8 @@ class MalletLDAModel(BaseModel):
             ids = list(range(len(texts))),
             predict=True,
             path_model=path_model,
-            save_temp=save_temp)
-        
-        if not path_mallet:
-            path_mallet = self._mallet_path
-
-        self.logger.info("Infer topics")
+            save_temp=save_temp,
+            mallet_path=path_mallet)
         
         # Infer topics
         cmd = (

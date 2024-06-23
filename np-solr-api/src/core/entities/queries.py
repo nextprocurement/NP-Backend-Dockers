@@ -58,7 +58,7 @@ class Queries(object):
         # ================================================================
         self.Q5 = {
             'q': "{{!vd f=doctpc_{} vector=\"{}\" distance=\"{}\"}}",
-            'fl': "id,score",
+            'fl': "id,title,score",
             'start': '{}',
             'rows': '{}'
         }
