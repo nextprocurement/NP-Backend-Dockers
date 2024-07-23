@@ -302,17 +302,18 @@ class NPSolrClient(SolrClient):
 
         return results.docs[0]["models"], sc
 
-    def delete_corpus(self, corpus_logical_path: str) -> None:
-        """Given the string path of corpus file, it deletes the Solr collection associated with it. Additionally, it removes the document entry of the corpus in the self.corpus_col collection and all the models that have been trained with such a logical corpus.
+    def delete_corpus(self, corpus_raw: str) -> None:
+        """Given the name of a corpus raw file as input, it deletes the Solr collection associated with it. Additionally, it removes the document entry of the corpus in the self.corpus_col collection and all the models that have been trained with such a corpus.
 
         Parameters
         ----------
-        corpus_logical_path : str
-            The path of the logical corpus file to be indexed.
+        corpus_raw : str
+            The string name of the corpus raw file to be deleted.
         """
 
-        # 1. Get stem of the logical corpus
-        corpus_logical_name = pathlib.Path(corpus_logical_path).stem.lower()
+        # 1. Get stem of the logical corpus        
+        corpus_to_delete = self.path_source / (corpus_raw + ".parquet")
+        corpus_logical_name = corpus_to_delete.stem.lower()
 
         # 2. Delete corpus collection
         _, sc = self.delete_collection(col_name=corpus_logical_name)

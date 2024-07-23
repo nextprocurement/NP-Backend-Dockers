@@ -59,8 +59,6 @@ class Corpus(object):
         self._logger.info(f"Sections {cf.sections()}")
         if self.name + "-config" in cf.sections():
             section = self.name + "-config"
-        elif self.name + "-config" in cf.sections():
-            section = self.name + "-config"
         else:
             self._logger.error(
                 f"Corpus configuration {self.name} not found in config file.")
