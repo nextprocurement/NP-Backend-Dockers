@@ -124,6 +124,8 @@
   <field name="date" type="pdate" indexed="true" stored="true" multiValued="false" />
   <field name="nwords_per_doc" type="pint" indexed="true" stored="true" multiValued="false" />
   <field name="SearcheableField" type="text_general" indexed="true" stored="true" multiValued="false" />
+  <field name="origin" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="ident_proc" type="pint" indexed="true" stored="true" multiValued="false" />
 
   <!-- Model fields  -->
   <field name="alphas" type="pfloat" indexed="true" stored="true" multiValued="false" />
@@ -366,6 +368,10 @@
     </analyzer>
   </fieldType>
 
+  <fieldType name="knn_vector_embeddings" class="solr.DenseVectorField" vectorDimension="384" similarityFunction="cosine"/>
+
+  <fieldType name="knn_vector_tpc_embeddings" class="solr.DenseVectorField" vectorDimension="200" similarityFunction="cosine"/>
+
   <field name="betas" type="VectorField" indexed="true" termOffsets="true" stored="true"
     termPositions="true" termVectors="true" multiValued="false" />
 
@@ -374,15 +380,13 @@
 
   <field name="bow" type="VectorField" indexed="true" termOffsets="true" stored="true"
     termPositions="true" termVectors="true" multiValued="false" />
-  
-  <field name="tpc_embeddings" type="VectorFloatField" indexed="true" termOffsets="true" stored="true"
-    termPositions="true" termVectors="true" multiValued="false" />
-  
-  <field name="embeddings" type="VectorFloatField" indexed="true" termOffsets="true" stored="true"
-    termPositions="true" termVectors="true" multiValued="false" />
 
   <field name="userRelevantTopics" type="VectorField" indexed="true" termOffsets="true" stored="true"
     termPositions="true" termVectors="true" multiValued="false" />
+
+  <field name="embeddings" type="knn_vector_embeddings" indexed="true" stored="true" multiValued="false"/>
+
+  <field name="tpc_embeddings" type="knn_vector_tpc_embeddings" indexed="true" stored="true" multiValued="false"/>
 
   <!-- <fieldType name="text_tfdl" class="solr.TextField" omitPositions="true" >
       <analyzer>

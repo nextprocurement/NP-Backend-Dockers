@@ -146,13 +146,10 @@ class getEmbedding(Resource):
                 model_path=model_path
             )
 
-            # Generate string representation of embeddings
-            def get_topic_embeddings(vector):
-                repr = " ".join(
-                    [f"e{idx}|{val}" for idx, val in enumerate(vector)]).rstrip()
-
-                return repr
-            embeddings_str = get_topic_embeddings(embeddings)
+            def get_float_embeddings(vector):
+                return [float(val) for _, val in enumerate(vector)]
+        
+            embeddings_flt = get_float_embeddings(embeddings)
 
             end_time = time.time() - start_time
 
@@ -164,10 +161,10 @@ class getEmbedding(Resource):
             }
             response = {
                 "responseHeader": responseHeader,
-                "response": embeddings_str
+                "response": embeddings_flt
             }
             logger.info(
-                f"-- -- String representation of embeddings generated successfully:{embeddings_str}")
+                f"-- -- Embeddings generated successfully:{embeddings_flt}")
 
             return response, sc
 

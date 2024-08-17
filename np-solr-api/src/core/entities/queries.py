@@ -162,8 +162,8 @@ class Queries(object):
         # # To calculate this, we use a Word2Vec model trained on the same data as the topic model. In this model, the chemical descriptions of topics are embedded in the same space as words. When a word is inputted, it is embedded in this space, and the closest topic, based on its chemical description, is selected. Subsequently, the documents associated with that topic are retrieved.
         # ##################################################################
         self.Q20 = {
-            'q': "{{!vd f=tpc_embeddings vector=\"{}\" distance=\"{}\"}}",
-            'fl': "id,score",
+            'q': "{{!knn f=tpc_embeddings topK=100}}{}",
+            'fl': "id,title,score",
             'start': '{}',
             'rows': '{}'
         }
@@ -172,8 +172,8 @@ class Queries(object):
         # # Q21: getDocsSimilarToFreeTextEmb
         # # Retrieve documents that are semantically similar to a given free text using BERT embeddings. The free text is represented by its BERT embeddings, and these embeddings for the documents in the collection are precalculated and indexed into Solr for efficient retrieval.
         # ################################################################
-        self.Q20 = {
-            'q': "{{!vd f=embeddings vector=\"{}\" distance=\"{}\"}}",
+        self.Q21 = {
+            'q': "{{!knn f=embeddings topK=100}}{}",
             'fl': "id,title,score",
             'start': '{}',
             'rows': '{}'
@@ -485,7 +485,6 @@ class Queries(object):
     def customize_Q20(
         self,
         wd_embeddings: str,
-        distance: str,
         start: str,
         rows: str
     ) -> dict:
@@ -509,7 +508,7 @@ class Queries(object):
         """
 
         custom_q20 = {
-            'q': self.Q20['q'].format(wd_embeddings, distance),
+            'q': self.Q20['q'].format(wd_embeddings),
             'fl': self.Q20['fl'],
             'start': self.Q20['start'].format(start),
             'rows': self.Q20['rows'].format(rows),
@@ -519,7 +518,6 @@ class Queries(object):
     def customize_Q21(
         self,
         doc_embeddings: str,
-        distance: str,
         start: str,
         rows: str
     ) -> dict:
@@ -542,10 +540,10 @@ class Queries(object):
             Customized query Q5.
         """
 
-        custom_q20 = {
-            'q': self.Q20['q'].format(doc_embeddings, distance),
-            'fl': self.Q20['fl'],
-            'start': self.Q20['start'].format(start),
-            'rows': self.Q20['rows'].format(rows),
+        custom_q21 = {
+            'q': self.Q21['q'].format(doc_embeddings),
+            'fl': self.Q21['fl'],
+            'start': self.Q21['start'].format(start),
+            'rows': self.Q21['rows'].format(rows),
         }
-        return custom_q20
+        return custom_q21

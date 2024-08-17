@@ -12,6 +12,7 @@ Date: 27/03/2023
 Modifed: 24/01/2024 (Updated for NP-Solr-Service (NextProcurement Proyect))
 """
 
+import json
 import logging
 import os
 from typing import List, Union
@@ -551,10 +552,13 @@ class SolrClient(object):
     # ======================================================
     # QUERIES
     # ======================================================
-    def execute_query(self,
-                      q: str,
-                      col_name: str,
-                      **kwargs) -> Union[int, SolrResults]:
+    def execute_query(
+            self,
+            q: str,
+            col_name: str,
+            type="get",
+            json_body: dict = None,
+            **kwargs) -> Union[int, SolrResults]:
         """ 
         Performs a query and returns the results.
 
@@ -566,6 +570,8 @@ class SolrClient(object):
             The query to be executed.
         col_name : str
             The name of the Solr collection to query.
+        json_body : dict, optional
+            A dictionary representing the JSON body to be sent in a POST request.
         **kwargs
             Additional options to be passed through the Solr URL.
 
@@ -583,21 +589,36 @@ class SolrClient(object):
         """
 
         # Prepare query
-        params = {"q": q}
-        params.update(kwargs)
+        if type.lower() == "get":
+            params = {"q": q}
+            params.update(kwargs)
 
-        # We want the result of the query as json
-        params["wt"] = "json"
+            # We want the result of the query as json
+            params["wt"] = "json"
 
-        # Encode query
-        self.logger.info(params)
-        query_string = parse.urlencode(params)
+            # Encode query for GET request
+            self.logger.info(params)
+            query_string = parse.urlencode(params)
+
+        else:
+            params = q
+            query_string = parse.urlencode(params)
+
         self.logger.info(query_string)
 
+        # Construct the URL
         url_ = '{}/solr/{}/select?{}'.format(self.solr_url,
                                              col_name, query_string)
 
-       # Send query to Solr
-        solr_resp = self._do_request(type="get", url=url_)
+        # Set headers for JSON content
+        headers = {"Content-Type": "application/json"}
+
+        if type.lower() == "post" and json_body:
+            # Send query to Solr as a POST request with a JSON body
+            solr_resp = self._do_request(
+                type=type, url=url_, headers=headers, data=json.dumps(json_body))
+        else:
+            # Send query to Solr as a GET request or POST without a body
+            solr_resp = self._do_request(type=type, url=url_, headers=headers)
 
         return solr_resp.status_code, solr_resp.results

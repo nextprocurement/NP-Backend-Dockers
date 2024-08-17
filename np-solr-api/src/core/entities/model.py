@@ -159,14 +159,7 @@ class Model(object):
         df["coords"] = self.coords
                 
         # Get topic embeddings
-        def get_topic_embeddings(vector):
-            
-            repr = " ".join(
-                [f"e{idx}|{val}" for idx, val in enumerate(vector[0])]).rstrip()
-            
-            return repr
-            
-        df["tpc_embeddings"] = df["tpc_embeddings"].apply(get_topic_embeddings)
+        df["tpc_embeddings"] = df["tpc_embeddings"].apply(lambda x: [val for _, val in enumerate(x)])
 
         json_str = df.to_json(orient='records')
         json_lst = json.loads(json_str)

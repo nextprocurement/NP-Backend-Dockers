@@ -1386,13 +1386,9 @@ class NPSolrClient(SolrClient):
         start, rows = self.custom_start_and_rows(start, rows, model_col)
         self.logger.info(f"-- -- Start: {start}, Rows: {rows}")
         
-        # 5. Calculate cosine similarity between the embedding of search_word and the embeddings of the documents in the corpus
-        distance = "cosine"
-
         # 5. Execute query
         q20 = self.querier.customize_Q20(
             wd_embeddings=embs,
-            distance=distance,
             start=start,
             rows=rows
         )
@@ -1443,7 +1439,7 @@ class NPSolrClient(SolrClient):
         search_doc:str,
         start:int,
         rows:int,
-        embedding_model:str = "word2vec",
+        embedding_model:str = "bert",
         lang:str = "es",
     ) -> Union[dict,int]:
         """
@@ -1492,20 +1488,13 @@ class NPSolrClient(SolrClient):
         embs = resp.results
         self.logger.info(
             f"-- -- Embbedings for doc {search_doc} attained in {resp.time} seconds: {embs}")
-        
-        with open("/data/source/embs.txt", 'w') as file:
-            file.write(embs)
          
         # 4. Customize start and rows
         start, rows = self.custom_start_and_rows(start, rows, corpus_col)
         
         # 5. Calculate cosine similarity between the embedding of search_doc and the embeddings of the documents in the corpus
-        distance = "cosine"
-
-        # 5. Execute query
         q21 = self.querier.customize_Q21(
             doc_embeddings=embs,
-            distance=distance,
             start=start,
             rows=rows
         )

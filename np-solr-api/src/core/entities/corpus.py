@@ -126,14 +126,8 @@ class Corpus(object):
         df['bow'] = df['bow'].apply(lambda x: ' '.join(
             [f'{word}|{count}' for word, count in x]).rstrip() if x else None)
         
-        # Ger embeddings of the documents
-        def get_str_embeddings(vector):
-            repr = " ".join(
-                [f"e{idx}|{val}" for idx, val in enumerate(vector.split())]).rstrip()
-
-            return repr
-        
-        df["embeddings"] = df["embeddings"].apply(get_str_embeddings)
+        # Get embeddings of the documents
+        df["embeddings"] = df["embeddings"].apply(lambda x: [float(val) for _, val in enumerate(x.split())])
 
         # Convert dates information to the format required by Solr ( ISO_INSTANT, The ISO instant formatter that formats or parses an instant in UTC, such as '2011-12-03T10:15:30Z')
         df, cols = convert_datetime_to_strftime(df)
@@ -158,7 +152,6 @@ class Corpus(object):
         """Creates the json to update the 'corpora' collection in Solr with the new logical corpus information.
         """
 
-        # TODO: Update
         fields_dict = [{"id": id,
                         "corpus_name": self.name,
                         "corpus_path": self.path_to_raw.as_posix(),
@@ -236,10 +229,3 @@ class Corpus(object):
             new_list.append(d)
 
         return new_list, new_SearcheableFields
-
-
-# if __name__ == '__main__':
-#    corpus = Corpus(pathlib.Path("/Users/lbartolome/Documents/GitHub/EWB/data/source/Cordis.json"))
-#    json_lst = corpus.get_docs_raw_info()
-#    new_list = corpus.get_corpus_SearcheableField_update(["Call"], action="add")
-#    fields_dict = corpus.get_corpora_update(1)
