@@ -58,7 +58,7 @@ class Queries(object):
         # ================================================================
         self.Q5 = {
             'q': "{{!vd f=doctpc_{} vector=\"{}\" distance=\"{}\"}}",
-            'fl': "id,title,score",
+            'fl': "id,title,place_id,link,score",
             'start': '{}',
             'rows': '{}'
         }
@@ -163,7 +163,7 @@ class Queries(object):
         # ##################################################################
         self.Q20 = {
             'q': "{{!knn f=tpc_embeddings topK=100}}{}",
-            'fl': "id,title,score",
+            'fl': "id,title,link,place_id,score",
             'start': '{}',
             'rows': '{}'
         }
@@ -174,7 +174,7 @@ class Queries(object):
         # ################################################################
         self.Q21 = {
             'q': "{{!knn f=embeddings topK=100}}{}",
-            'fl': "id,title,score",
+            'fl': "id,title,link,place_id,score",
             'start': '{}',
             'rows': '{}'
         }

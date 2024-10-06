@@ -117,6 +117,9 @@
   <field name="corpus_path" type="string" indexed="true" stored="true" required="false" multiValued="false" />
 
   <!-- Corpus fields  -->
+   <!--<field name="identifier" type="string" indexed="true" stored="true" required="true" multiValued="false" />-->
+  <field name="place_id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="link" type="string" indexed="true" stored="true" required="true" multiValued="false" />
   <field name="corpus_name" type="text_general" indexed="true" stored="true" multiValued="false" />
   <field name="raw_text" type="text_general" indexed="true" stored="true" multiValued="false" />
   <field name="title" type="text_general" indexed="true" stored="true" multiValued="false" />

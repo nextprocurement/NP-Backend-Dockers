@@ -47,5 +47,5 @@ SearcheableField=identifier,title
 id_field=identifier
 title_field=title
 date_field=date
-MetadataDisplayed=identifier,title
+MetadataDisplayed=identifier,title,link,place_id
 SearcheableField=identifier,title
