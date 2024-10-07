@@ -123,6 +123,8 @@ class NPSolrClient(SolrClient):
         self.index_documents(corpus_col_upt, self.corpus_col, self.batch_size)
         self.logger.info(
             f"-- -- Indexing of {corpus_logical_name} info in {self.corpus_col} completed.")
+        
+        self.logger.info("this is the corpus_col_upt: {corpus_col_upt}")
 
         # 6. Index documents in corpus collection
         self.logger.info(
