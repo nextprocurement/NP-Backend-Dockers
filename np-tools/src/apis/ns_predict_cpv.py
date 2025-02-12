@@ -1,78 +1,92 @@
 import time
-from flask_restx import Namespace, Resource, reqparse
-from src.core.cpv_classifier import CpvClassifier
-
 import logging
-logging.basicConfig(level='DEBUG')
+from flask import Flask, request, jsonify
+from flask_restx import Namespace, Resource, Api, reqparse
+from src.core.cpv_classifier_5 import CPVClassifierOpenAI
+
+# -----------------------------
+# ✅ Logging Configuration
+# -----------------------------
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('PredictCpv')
 
-# ======================================================
-# Define namespace for prediction operations
-# ======================================================
+# -----------------------------
+# ✅ Flask Application Initialization
+# -----------------------------
 api = Namespace('Cpv operations')
 
-# ======================================================
-# Create CpvClassifier object
-# ======================================================
-cpv_classifier = CpvClassifier(logger=logger)
-
-# ======================================================
-# Define parsers to take inputs from user
-# ======================================================
+# -----------------------------
+# ✅ Request Parser for Input Validation
+# -----------------------------
 cpv_parser = reqparse.RequestParser()
-cpv_parser.add_argument("text_to_infer",
-                        help="Text to whose CPV code is to be inferred",
-                        required=True)
+cpv_parser.add_argument("api_key", help="OpenAI API key", required=True)
+cpv_parser.add_argument("texts", help="Text(s) to predict CPV codes", action='split', required=True)
 
-
+# -----------------------------
+# ✅ API Endpoint for CPV Prediction
+# -----------------------------
 @api.route('/predictCpv')
-class predictCpv(Resource):
+class PredictCpv(Resource):
     @api.doc(
         parser=cpv_parser,
         responses={
             200: 'Success: CPV code generated successfully',
-            502: "CPV code generation error",
+            400: 'Bad Request: Missing required parameters',
+            502: 'CPV code generation error',
         }
-
     )
     def post(self):
+        """
+        API endpoint to predict CPV codes.
 
+        - Expects JSON with:
+            - "api_key": OpenAI API key
+            - "texts": A list of texts to predict CPV codes
+        - Returns CPV codes in JSON format
+        """
         start_time = time.time()
 
         args = cpv_parser.parse_args()
+        api_key = args['api_key']
+        texts = args['texts']
+
+        # Ensure texts is always a list
+        if not isinstance(texts, list):
+            texts = [texts]
+
+        # Initialize CPVClassifierOpenAI with the provided API key
+        cpv_classifier = CPVClassifierOpenAI(api_key, logger=logger)
 
         try:
-            result = cpv_classifier.predict_description(args['text_to_infer'])
+            results = []
+            for text in texts:
+                prediction = cpv_classifier.predict_cpv_code(text)
+                results.append({
+                    "text": text,
+                    "cpv_code": prediction["cpv_predicted"] if prediction else None
+                })
 
-            end_time = time.time() - start_time
+            # Measure execution time
+            execution_time = round(time.time() - start_time, 2)
 
-            # Generate response
-            sc = 200
-            responseHeader = {
-                "status": sc,
-                "time": end_time,
-            }
+            # Prepare successful response
             response = {
-                "responseHeader": responseHeader,
-                "response": result
+                "status": 200,
+                "execution_time_seconds": execution_time,
+                "predictions": results
             }
-            logger.info(
-                f"-- -- CPV code generated successfully: {result}")
 
-            return response, sc
+            logger.info(f"✅ CPV code(s) generated successfully: {results}")
+            return response, 200
 
         except Exception as e:
-            end_time = time.time() - start_time
-            sc = 502
-            responseHeader = {
-                "status": sc,
-                "time": end_time,
+            execution_time = round(time.time() - start_time, 2)
+            logger.error(f"❌ CPV code generation error: {str(e)}")
+
+            # Prepare error response
+            response = {
+                "status": 502,
+                "execution_time_seconds": execution_time,
                 "error": str(e)
             }
-            response = {
-                "responseHeader": responseHeader
-            }
-            logger.error(
-                f"-- -- CPV code generation error: {str(e)}")
-
-            return response, sc
+            return response, 502
