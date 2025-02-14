@@ -69,5 +69,6 @@ tenacity==8.2.2
 requests_toolbelt==1.0.0
 zstandard==0.23.0
 jsonpatch==1.33
+python-dotenv==1.0.1
 huggingface_hub
 skops

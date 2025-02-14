@@ -40,7 +40,6 @@ COPY . .
 
 RUN mkdir -p /data/source
 
-
 # Install project requirements
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install "dask[complete]"
@@ -63,6 +62,9 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 
 # Initialize the sentence transformer
 RUN python initialize_st.py
+
+# Copiar archivo .env (asegúrate de que esté en la raíz de tu proyecto)
+COPY .env .
 
 EXPOSE 102
 

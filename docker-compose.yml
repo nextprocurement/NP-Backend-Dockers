@@ -28,6 +28,8 @@ services:
     container_name: np-tools
     ports:
       - 112:102
+    env_file:
+      - ./np-tools/.env
     networks:
       - np-net
     volumes:

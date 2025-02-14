@@ -1,8 +1,18 @@
 import time
 import logging
-from flask import Flask, request, jsonify
-from flask_restx import Namespace, Resource, Api, reqparse
+import os
+from dotenv import load_dotenv
+from flask import request
+from flask_restx import Namespace, Resource, reqparse
 from src.core.cpv_classifier_5 import CPVClassifierOpenAI
+
+# -----------------------------
+# ✅ Cargar Variables de Entorno
+# -----------------------------
+load_dotenv()  # Cargar las variables desde el archivo .env
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("La variable de entorno OPENAI_API_KEY no está configurada")
 
 # -----------------------------
 # ✅ Logging Configuration
@@ -19,7 +29,6 @@ api = Namespace('Cpv operations')
 # ✅ Request Parser for Input Validation
 # -----------------------------
 cpv_parser = reqparse.RequestParser()
-cpv_parser.add_argument("api_key", help="OpenAI API key", required=True)
 cpv_parser.add_argument("texts", help="Text(s) to predict CPV codes", action='split', required=True)
 
 # -----------------------------
@@ -36,18 +45,9 @@ class PredictCpv(Resource):
         }
     )
     def post(self):
-        """
-        API endpoint to predict CPV codes.
-
-        - Expects JSON with:
-            - "api_key": OpenAI API key
-            - "texts": A list of texts to predict CPV codes
-        - Returns CPV codes in JSON format
-        """
         start_time = time.time()
 
         args = cpv_parser.parse_args()
-        api_key = args['api_key']
         texts = args['texts']
 
         # Ensure texts is always a list
@@ -66,10 +66,8 @@ class PredictCpv(Resource):
                     "cpv_code": prediction["cpv_predicted"] if prediction else None
                 })
 
-            # Measure execution time
             execution_time = round(time.time() - start_time, 2)
 
-            # Prepare successful response
             response = {
                 "status": 200,
                 "execution_time_seconds": execution_time,
@@ -83,7 +81,6 @@ class PredictCpv(Resource):
             execution_time = round(time.time() - start_time, 2)
             logger.error(f"❌ CPV code generation error: {str(e)}")
 
-            # Prepare error response
             response = {
                 "status": 502,
                 "execution_time_seconds": execution_time,
