@@ -8,6 +8,7 @@ COPY . .
 RUN mkdir -p /data/source
 RUN mkdir -p /data/inference
 
+RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install "dask[dataframe]"
 

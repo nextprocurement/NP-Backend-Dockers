@@ -49,3 +49,17 @@ title_field=title
 date_field=date
 MetadataDisplayed=identifier,title,link,place_id
 SearcheableField=identifier,title
+
+[place_all_embeddings_metadata-config]
+id_field=id
+title_field=title
+date_field=date
+MetadataDisplayed=id,title,link,place_id
+SearcheableField=id,title
+
+[sample-config]
+id_field=id
+title_field=title
+date_field=date
+MetadataDisplayed=id,title,link,place_id
+SearcheableField=id,title

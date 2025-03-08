@@ -126,3 +126,12 @@ Visit the [Wiki page](https://github.com/nextprocurement/NP-Backend-Dockers/wiki
 **Python requirements files** available within each "service" folder.
 
 > *Requirements are directly installed in their respective services at the building-up time.*
+
+## Acknowledgements
+
+This work has received funding from the NextProcurement European Action (grant agreement INEA/CEF/ICT/A2020/2373713-Action 2020-ES-IA-0255).
+
+<p align="center">
+  <img src="static/Images/eu-logo.svg" alt="EU Logo" width="200" style="margin-right: 20px;">
+  <img src="static/Images/nextprocurement-logo.png" alt="Next Procurement Logo" width="200">
+</p>

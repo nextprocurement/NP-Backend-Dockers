@@ -111,27 +111,36 @@ class NPSolrClient(SolrClient):
 
         # 4. Create Corpus object and extract info from the corpus to index
         corpus = Corpus(corpus_to_index)
-        json_docs = corpus.get_docs_raw_info()
-        self.logger.info(f"-- -- Corpus info extracted")
         corpus_col_upt = corpus.get_corpora_update(id=corpus_id)
         self.logger.info(f"-- -- corpus_col_upt extracted")
         self.logger.info(f"{corpus_col_upt}")
 
-        # 5. Index corpus and its fiels in CORPUS_COL
+        # 5. Index corpus and its fields in CORPUS_COL
         self.logger.info(
             f"-- -- Indexing of {corpus_logical_name} info in {self.corpus_col} starts.")
         self.index_documents(corpus_col_upt, self.corpus_col, self.batch_size)
         self.logger.info(
             f"-- -- Indexing of {corpus_logical_name} info in {self.corpus_col} completed.")
         
-        self.logger.info("this is the corpus_col_upt: {corpus_col_upt}")
+        self.logger.info(f"this is the corpus_col_upt: {corpus_col_upt}")
 
         # 6. Index documents in corpus collection
         self.logger.info(
             f"-- -- Indexing of {corpus_logical_name} in {corpus_logical_name} starts.")
-        self.index_documents(json_docs, corpus_logical_name, self.batch_size)
-        self.logger.info(
-            f"-- -- Indexing of {corpus_logical_name} in {corpus_logical_name} completed.")
+        batch = []
+        for doc in corpus.get_docs_raw_info():
+            batch.append(doc)
+            
+            if len(batch) >= self.batch_size:
+                
+                self.index_documents(batch, corpus_logical_name, self.batch_size)
+                batch = []  # Clear batch to free memory
+
+        # Index remaining documents
+        if batch:
+            self.index_documents(batch, corpus_logical_name, self.batch_size)
+        self.logger.info(f"-- -- Indexing of {corpus_logical_name} info in {corpus_logical_name} completed.")
+
 
         return
 
@@ -652,6 +661,7 @@ class NPSolrClient(SolrClient):
         """
         if start is None:
             start = str(0)
+            
         if rows is None:
             numFound_dict, sc = self.do_Q3(col)
             rows = str(numFound_dict['ndocs'])
@@ -659,8 +669,8 @@ class NPSolrClient(SolrClient):
             if sc != 200:
                 self.logger.error(
                     f"-- -- Error executing query Q3. Aborting operation...")
-                return
-
+                return "0", "100"
+        self.logger.info(f"-- -- Start: {start}, Rows: {rows} from custom_start_and_rows")
         return start, rows
 
     # ======================================================
@@ -1489,7 +1499,7 @@ class NPSolrClient(SolrClient):
 
         embs = resp.results
         self.logger.info(
-            f"-- -- Embbedings for doc {search_doc} attained in {resp.time} seconds: {embs}")
+            f"-- -- Embbedings for doc {search_doc} attained in {resp.time} seconds.")
          
         # 4. Customize start and rows
         start, rows = self.custom_start_and_rows(start, rows, corpus_col)
@@ -1508,6 +1518,91 @@ class NPSolrClient(SolrClient):
         if sc != 200:
             self.logger.error(
                 f"-- -- Error executing query Q21. Aborting operation...")
+            return
+
+        return results.docs, sc
+    
+    def do_Q22(
+        self,
+        corpus_col:str,
+        search_doc:str,
+        keyword:str,
+        start:int,
+        rows:int,
+        embedding_model:str = "bert",
+        query_fields:str="title", #"tile objective"
+        lang:str = "es",
+    ) -> Union[dict,int]:
+        """
+        Executes query Q21.
+        
+        Parameters
+        ----------
+        corpus_col: str
+            Name of the corpus collection
+        search_doc: str
+            Document to look documents similar to
+        keyword: str
+            Keyword to filter the documents
+        start: int
+            Index of the first document to be retrieved
+        rows: int
+            Number of documents to be retrieved
+        embedding_model: str
+            Name of the embedding model to be used
+        query_fields: str
+            Fields on which BM25 search will be applied
+        lang: str
+            Language of the text to be embedded
+        
+        Returns
+        -------
+        response: dict
+            JSON object with the results of the query.
+        """
+        
+        # 0. Convert corpus to lowercase
+        corpus_col = corpus_col.lower()
+        
+        # 1. Check that corpus_col is indeed a corpus collection
+        if not self.check_is_corpus(corpus_col):
+            return
+        
+        # 3. Get embedding from search_doc
+        resp = self.nptooler.get_embedding(
+            text_to_embed=search_doc,
+            embedding_model=embedding_model,
+            lang=lang
+        )
+        
+        if resp.status_code != 200:
+            self.logger.error(
+                f"-- -- Error attaining embeddings from {search_doc} while executing query Q22. Aborting operation...")
+            return
+
+        embs = resp.results
+        self.logger.info(
+            f"-- -- Embbedings for doc {search_doc} attained in {resp.time} seconds.")
+         
+        # 4. Customize start and rows
+        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
+        
+        # 5. Calculate cosine similarity between the embedding of search_doc and the embeddings of the documents in the corpus
+        q21 = self.querier.customize_Q22(
+            doc_embeddings=embs,
+            keyword=keyword,
+            query_fields=query_fields,
+            start=start,
+            rows=rows
+        )
+        params = {k: v for k, v in q21.items() if k != 'q'}
+
+        sc, results = self.execute_query(
+            q=q21['q'], col_name=corpus_col, **params)
+
+        if sc != 200:
+            self.logger.error(
+                f"-- -- Error executing query Q22. Aborting operation...")
             return
 
         return results.docs, sc

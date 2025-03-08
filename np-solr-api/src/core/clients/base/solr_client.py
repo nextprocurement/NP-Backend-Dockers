@@ -502,7 +502,8 @@ class SolrClient(object):
 
         # Send request to Solr
         solr_resp = self._do_request(
-            type="post", url=url_, headers=headers_, json=docs_batch,
+            type="post", url=url_, headers=headers_, 
+            json=docs_batch,
             params=params, proxies={})
 
         if solr_resp.status_code == 200:
@@ -531,20 +532,19 @@ class SolrClient(object):
         index_from = 0
         to_index = len(json_docs)
         for index, doc in enumerate(json_docs):
+
             docs_batch.append(doc)
-            # To index batches of documents at a time.
+
             if index % batch_size == 0 and index != 0:
                 # Index batch to Solr
-                self.index_batch(docs_batch, col_name, to_index,
-                                 index_from=index_from, index_to=index)
+                self.index_batch(docs_batch, col_name, to_index,index_from=index_from, index_to=index)
                 docs_batch = []
                 index_from = index + 1
-                self.logger.info("==== indexed {} documents ======"
-                                 .format(index))
+                self.logger.info("==== indexed {} documents ======" .format(index))
         # To index the rest, when 'documents' list < batch_size.
+        self.logger.info("Docs batch: {}".format(len(docs_batch)))
         if docs_batch:
-            self.index_batch(docs_batch, col_name, to_index,
-                             index_from=index_from, index_to=index)
+            self.index_batch(docs_batch, col_name, to_index,index_from=index_from, index_to=index)
         self.logger.info("-- -- Finished indexing")
 
         return

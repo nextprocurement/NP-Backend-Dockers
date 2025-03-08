@@ -12,6 +12,7 @@ from typing import List
 from gensim.corpora import Dictionary
 import pathlib
 import dask.dataframe as dd
+import numpy as np
 from dask.diagnostics import ProgressBar
 from src.core.entities.utils import (convert_datetime_to_strftime,
                                      parseTimeINSTANT)
@@ -77,73 +78,73 @@ class Corpus(object):
 
         return
 
-    def get_docs_raw_info(self) -> List[dict]:
-        """Extracts the information contained in the parquet file associated to the logical corpus and transforms into a list of dictionaries.
-
-        Returns:
-        --------
-        json_lst: list[dict]
-            A list of dictionaries containing information about the corpus.
+    def get_docs_raw_info(self):
+        """Extracts the information contained in the parquet file in a memory-efficient way
+        using a generator instead of returning a full list.
         """
-
         ddf = dd.read_parquet(self.path_to_raw).fillna("")
         self._logger.info(ddf.head())
 
-        # If the id_field is in the SearcheableField, remove it and add the id field (new name for the id_field)
+        # If the id_field is in the SearcheableField, adjust it
         if self.id_field in self.SearcheableField:
             self.SearcheableField.remove(self.id_field)
             self.SearcheableField.append("id")
+
         self._logger.info(f"SearcheableField {self.SearcheableField}")
 
-        # Rename id-field to id, title-field to title and date-field to date
-        ddf = ddf.rename(
-            columns={
-                self.id_field: "id",
-                self.title_field: "title",
-                self.date_field: "date"})
+        # Rename necessary fields
+        ddf = ddf.rename(columns={
+            self.id_field: "id",
+            self.title_field: "title",
+            self.date_field: "date"
+        })
 
-        with ProgressBar():
-            df = ddf.compute(scheduler='processes')
-
-        self._logger.info(df.columns)
-
-        # Get number of words per document based on the lemmas column
-        # NOTE: Document whose lemmas are empty will have a length of 0
-        df["nwords_per_doc"] = df["lemmas"].apply(lambda x: len(x.split()))
-
-        # Get BoW representation
-        # We dont read from the gensim dictionary that will be associated with the tm models trained on the corpus since we want to have the bow for all the documents, not only those kept after filering extremes in the dictionary during the construction of the logical corpus
-        # check none values: df[df.isna()]
-        df['lemmas_'] = df['lemmas'].apply(
-            lambda x: x.split() if isinstance(x, str) else [])
         dictionary = Dictionary()
-        df['bow'] = df['lemmas_'].apply(
-            lambda x: dictionary.doc2bow(x, allow_update=True) if x else [])
-        df['bow'] = df['bow'].apply(
-            lambda x: [(dictionary[id], count) for id, count in x] if x else [])
-        df['bow'] = df['bow'].apply(lambda x: None if len(x) == 0 else x)
-        df = df.drop(['lemmas_'], axis=1)
-        df['bow'] = df['bow'].apply(lambda x: ' '.join(
-            [f'{word}|{count}' for word, count in x]).rstrip() if x else None)
-        
-        # Get embeddings of the documents
-        df["embeddings"] = df["embeddings"].apply(lambda x: [float(val) for _, val in enumerate(x.split())])
 
-        # Convert dates information to the format required by Solr ( ISO_INSTANT, The ISO instant formatter that formats or parses an instant in UTC, such as '2011-12-03T10:15:30Z')
-        df, cols = convert_datetime_to_strftime(df)
-        df[cols] = df[cols].applymap(parseTimeINSTANT)
+        def process_partition(partition):
+            """Processes a single partition of the dataframe"""
+            partition["nwords_per_doc"] = partition["lemmas"].apply(lambda x: len(x.split()))
+            partition["lemmas_"] = partition["lemmas"].apply(lambda x: x.split() if isinstance(x, str) else [])
+            
+            # Convert to BoW representation
+            partition['bow'] = partition["lemmas_"].apply(
+                lambda x: dictionary.doc2bow(x, allow_update=True) if x else []
+            )
+            partition['bow'] = partition['bow'].apply(
+                lambda x: [(dictionary[id], count) for id, count in x] if x else []
+            )
+            partition['bow'] = partition['bow'].apply(lambda x: ' '.join([f'{word}|{count}' for word, count in x]) if x else None)
+            
+            partition = partition.drop(['lemmas_'], axis=1)
 
-        # Create SearcheableField by concatenating all the fields that are marked as SearcheableField in the config file
-        df['SearcheableField'] = df[self.SearcheableField].apply(
-            lambda x: ' '.join(x.astype(str)), axis=1)
+            # Convert embeddings (assume space-separated numbers)
+            """
+            partition["embeddings"] = partition["embeddings"].apply(
+                lambda x: [float(val) for val in x.split()] if isinstance(x, str) else []
+            )
+            """
+            partition["embeddings"] =  partition["embeddings"].apply(lambda x: [float(val) for _, val in enumerate(x.split())])
+            
+            for col in partition.columns:
+                partition[col] = partition[col].apply(
+                    lambda x: x.tolist() if isinstance(x, np.ndarray) else x
+            )
 
-        # Save corpus fields
-        self.fields = df.columns.tolist()
+            # Convert date fields
+            partition, cols = convert_datetime_to_strftime(partition)
+            partition[cols] = partition[cols].applymap(parseTimeINSTANT)
 
-        json_str = df.to_json(orient='records')
-        json_lst = json.loads(json_str)
-        
-        return json_lst
+            # Create SearcheableField
+            partition['SearcheableField'] = partition[self.SearcheableField].apply(
+                lambda x: ' '.join(x.astype(str)), axis=1
+            )
+            
+            for record in partition.to_dict(orient="records"):
+                yield record
+
+        # Process and yield data partition by partition
+        for partition in ddf.to_delayed():
+            yield from process_partition(partition.compute())
 
     def get_corpora_update(
         self,

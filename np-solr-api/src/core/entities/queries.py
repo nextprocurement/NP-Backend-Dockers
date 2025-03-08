@@ -155,7 +155,7 @@ class Queries(object):
             'rows': '{}'
         }
 
-        # If adding a new one, start numberation at 20
+        # If adding a new one, start numeration at 20
         # ================================================================
         # # Q20: getDocsRelatedToWord 
         # # Get documents related to a word according to a given topic model.
@@ -178,6 +178,18 @@ class Queries(object):
             'start': '{}',
             'rows': '{}'
         }
+        # ================================================================
+        # # Q22: getDocsSimilarToFreeTextEmbAndBM25
+        # BM25 retrieves the most relevant documents based on keyword matching and ranking.
+        # KNN embeddings then refine the results, making the search more semantic-aware.
+        self.Q22 = {
+            'q': "{{!edismax qf={}}} {}",
+            'rq': "{{!knn f=embeddings topK=100}}{}",
+            'fl': "id,title,link,place_id,score",
+            'start': '{}',
+            'rows': '{}'
+        }
+
 
     def customize_Q1(self,
                      id: str,
@@ -547,3 +559,39 @@ class Queries(object):
             'rows': self.Q21['rows'].format(rows),
         }
         return custom_q21
+    
+    def customize_Q22(
+        self,
+        doc_embeddings: str,
+        keyword: str,
+        start: str,
+        rows: str,
+        query_fields: str
+    ) -> dict:
+        """Customizes query Q22 'getDocsSimilarToFreeTextEmbAndBM25'
+
+        Parameters
+        ----------
+        doc_embeddings: str
+            Embeddings of the user's free doc.
+        distance: str
+            Distance metric to be used.
+        start: str
+            Start value.
+        rows: str
+            Number of rows to retrieve.
+
+        Returns
+        -------
+        custom_q5: dict
+            Customized query Q5.
+        """
+
+        custom_q22 = {
+            'q': self.Q22['q'].format(query_fields, keyword),
+            'rq': self.Q22['rq'].format(doc_embeddings),
+            'fl': self.Q22['fl'],
+            'start': self.Q22['start'].format(start),
+            'rows': self.Q22['rows'].format(rows),
+        }
+        return custom_q22
