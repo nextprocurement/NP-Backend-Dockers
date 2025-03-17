@@ -231,7 +231,7 @@ class NPToolsClient(Client):
 
         params_ = {
             'text_to_infer': ",".join(text_to_infer),
-            'model_for_infer': model_for_infer,
+            'model_name': model_for_infer,
         }
 
         encoded_params = urlencode(params_)

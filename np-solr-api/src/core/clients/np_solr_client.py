@@ -1535,13 +1535,10 @@ class NPSolrClient(SolrClient):
     
     def do_Q22( # this is not a predefined query, but a wrapper over the inferencer that gets the information for the predicted topic
         self,
-        corpus_col: str,
         model_name: str,
-        text_to_infer: str,
-        start: str,
-        rows: str
+        text_to_infer: str
     ) -> Union[dict, int]:
-        """Executes query Q14.
+        """Executes query Q22.
 
         Parameters
         ----------
@@ -1564,19 +1561,13 @@ class NPSolrClient(SolrClient):
             The status code of the response.
         """
 
-        # 0. Convert corpus and model names to lowercase
-        corpus_col = corpus_col.lower()
+        # 0. Convert model names to lowercase
         model_col = model_name.lower()
 
-        # 1. Check that corpus_col is indeed a corpus collection
-        if not self.check_is_corpus(corpus_col):
+        if not self.check_is_model(model_col):
             return
 
-        # 2. Check that corpus_col has the model_col field
-        if not self.check_corpus_has_model(corpus_col, model_col):
-            return
-
-        # 3. Make request to NPTools API to get thetas of text_to_infer
+        # 1. Make request to NPTools API to get thetas of text_to_infer
         # Get text (lemmas) of the document so its thetas can be inferred
         lemmas_resp = self.nptooler.get_lemmas(text_to_lemmatize=text_to_infer, lang="es")
         lemmas = lemmas_resp.results[0]['lemmas']
@@ -1584,8 +1575,9 @@ class NPSolrClient(SolrClient):
         self.logger.info(
             f"-- -- Lemmas attained in {lemmas_resp.time} seconds: {lemmas}")
         
-        inf_resp = self.nptooler.get_thetas(text_to_infer=lemmas,
-                                    model_for_infer=model_name)
+        inf_resp = self.nptooler.get_thetas(
+            text_to_infer=lemmas,
+            model_for_infer=model_name)
 
         if inf_resp.status_code != 200:
             self.logger.error(
@@ -1597,26 +1589,19 @@ class NPSolrClient(SolrClient):
         self.logger.info(
             f"-- -- Thetas attained in {inf_resp.time} seconds: {thetas}")
 
-        # 4. Customize start and rows
-        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
+        # thetas is something like "t0|26 t1|21 t2|61 t3|77 t4|55 t5|34 t6|127 t7|97 t8|46 t9|154 t10|179 t11|123"
+        # get topics and their weights as a dictionary
+        topics = {tpc.split("|")[0]: int(tpc.split("|")[1]) for tpc in thetas.split(" ")}
         
-        # 5. Execute query
-        distance = "bhattacharyya"
-        q14 = self.querier.customize_Q14(
-            model_name=model_col, thetas=thetas, distance=distance,
-            start=start, rows=rows)
-        params = {k: v for k, v in q14.items() if k != 'q'}
+        # 3. Get model info for the topics in the text
+        # execute Q10 to get model info
+        start, rows = self.custom_start_and_rows(0, None, model_col)
+        model_info, sc = self.do_Q10(model_col, start=start, rows=rows, only_id=False)
+        # model info is a list of dictionaries, each dictionary has the id of the topic in the form "t0", "t1", etc.
+        # keep only info from the topics that are in topics, the keys "id", "tpc_descriptions" and "tpc_labels", and add "weight" to each dictionary
+        # the result is a list of dictionaries with the keys "id", "tpc_descriptions", "tpc_labels", and "weight"
+        upd_model_info = [{"id": tpc["id"], "tpc_descriptions": tpc["tpc_descriptions"], "tpc_labels": tpc["tpc_labels"], "weight": topics[tpc["id"]]} for tpc in model_info if tpc["id"] in topics]
         
-        sc, results = self.execute_query(
-            q=q14['q'], col_name=corpus_col, **params)
+        self.logger.info(f"-- -- Model info: {upd_model_info}")
         
-        if sc != 200:
-            self.logger.error(
-                f"-- -- Error executing query Q14. Aborting operation...")
-            return
-
-        # 6. Normalize scores
-        for el in results.docs:
-            el['score'] *= (100/(self.thetas_max_sum ^ 2))
-
-        return results.docs, sc
+        return upd_model_info, sc

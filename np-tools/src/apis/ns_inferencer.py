@@ -34,18 +34,23 @@ infer_doc_parser = reqparse.RequestParser()
 infer_doc_parser.add_argument(
     'text_to_infer',
     help='Input text to be inferred. Separate multiple texts with commas.',
-    required=True
+    required=False
 )
 infer_doc_parser.add_argument(
     'cpv',
     help='The first two digits of the CPV code corresponding to the text.',
-    required=True
+    required=False
 )
 infer_doc_parser.add_argument(
     'granularity',
     help='Specifies the level of topic detail: "large" (more topics) or "small" (fewer topics). Default is "large".',
     default="large",
-    required=True
+    required=False
+)
+infer_doc_parser.add_argument(
+    'model_name',
+    help="Model to be used for the inference in case 'cpv' and 'granularity' are not provided.",
+    required=False
 )
 
 @api.route('/inferDoc/')
@@ -68,7 +73,26 @@ class InferDoc(Resource):
         text_to_infer = args['text_to_infer']
         cpv = args["cpv"]
         granularity = args["granularity"]
-        model_to_infer = f"{cpv}_{granularity}"
+        model_name = args["model_name"]
+        
+        if cpv is None and model_name is None:
+            # return error
+            end_time = time.time() - start_time
+            sc = 503
+            responseHeader = {
+                "status": sc,
+                "time": end_time,
+                "error": "CPV code or model name not provided."
+            }
+            response = {
+                "responseHeader": responseHeader,
+                "response": None
+            }
+            return response, sc
+        elif cpv is not None:
+            model_to_infer = f"{cpv}_{granularity}"
+        else:
+            model_to_infer = model_name
         
         # We look for the model in case the user did not write the name properly
         look_dir = pathlib.Path("/data/source/cpv_models")
@@ -100,9 +124,23 @@ class InferDoc(Resource):
             return response, sc
 
         # Perform inference
-        text_to_infer_lst = text_to_infer.split(",")
-        if len(text_to_infer_lst) == 1:
-            text_to_infer_lst = [text_to_infer]
+        if isinstance(text_to_infer, str):
+            text_to_infer_lst = text_to_infer.split(",")
+            if len(text_to_infer_lst) == 1:
+                text_to_infer_lst = [text_to_infer]
+        elif isinstance(text_to_infer, list):
+            text_to_infer_lst = text_to_infer
+        else:
+            end_time = time.time() - start_time
+            sc = 502
+            responseHeader = {
+                "status": sc,
+                "time": end_time,
+                "error": str(e)
+            }
+            return response, sc
+        
+        logger.info(f"-- -- THIS IS THE Text to infer: {text_to_infer_lst}")
         try:
             thetas = inferencer.predict(
                 texts=text_to_infer_lst,

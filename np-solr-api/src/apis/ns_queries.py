@@ -97,7 +97,7 @@ q14_parser = reqparse.RequestParser()
 q14_parser.add_argument(
     'corpus_collection', help='Name of the corpus collection', required=True)
 q14_parser.add_argument(
-    'model_name', help='Name of the model reponsible for the creation of the doc-topic distribution', required=True)
+    'model_name', help='Name of the model responsible for the creation of the doc-topic distribution', required=True)
 q14_parser.add_argument(
     'text_to_infer', help="Text to be inferred", required=True)
 q14_parser.add_argument(
@@ -131,6 +131,29 @@ q21_parser.add_argument(
 q21_parser.add_argument(
     'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
 
+q22_parser = reqparse.RequestParser()
+q22_parser.add_argument(
+    'text_to_infer',
+    help='Input text to be inferred. Separate multiple texts with commas.',
+    required=True
+)
+q22_parser.add_argument(
+    'cpv',
+    help='The first two digits of the CPV code corresponding to the text.',
+    required=False
+)
+q22_parser.add_argument(
+    'granularity',
+    help='Specifies the level of topic detail: "large" (more topics) or "small" (fewer topics). Default is "large".',
+    default="large",
+    required=False
+)
+
+q22_parser.add_argument(
+    'model_name',
+    help="Model to be used for the inference in case 'cpv' and 'granularity' are not provided.",
+    required=False
+)
 
 @api.route('/getThetasDocById/')
 class getThetasDocById(Resource):
@@ -344,5 +367,26 @@ class getDocsSimilarToFreeTextEmb(Resource):
                 start=start,
                 rows=rows
             )
+        except Exception as e:
+            return str(e), 500
+        
+@api.route('/inferTopicInformation/')
+class inferTopicInformation(Resource):
+    @api.doc(parser=q22_parser)
+    def get(self):
+        args = q22_parser.parse_args()
+        
+        if args['cpv'] is None and args['model_name'] is None:
+            return "CPV code or model name not provided.", 500
+        
+        if args['cpv'] is not None:
+            model_name = args['cpv'] + "_" + args['granularity']
+        else:
+            model_name = args['model_name']
+            
+        text_to_infer = args['text_to_infer']
+
+        try:
+            return sc.do_Q22(model_name=model_name, text_to_infer=text_to_infer)
         except Exception as e:
             return str(e), 500
