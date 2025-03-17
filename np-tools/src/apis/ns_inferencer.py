@@ -30,12 +30,23 @@ inferencer = Inferencer(logger=logger)
 # Define parsers to take inputs from user
 # ======================================================
 infer_doc_parser = reqparse.RequestParser()
-infer_doc_parser.add_argument('text_to_infer',
-                              help='Text to be inferred',
-                              required=True)
-infer_doc_parser.add_argument('model_for_infer',
-                              help='Model to be used for the inference', required=True)
-
+#infer_doc_parser.add_argument('model_for_infer', help='Model to be used for the inference', required=True)
+infer_doc_parser.add_argument(
+    'text_to_infer',
+    help='Input text to be inferred. Separate multiple texts with commas.',
+    required=True
+)
+infer_doc_parser.add_argument(
+    'cpv',
+    help='The first two digits of the CPV code corresponding to the text.',
+    required=True
+)
+infer_doc_parser.add_argument(
+    'granularity',
+    help='Specifies the level of topic detail: "large" (more topics) or "small" (fewer topics). Default is "large".',
+    default="large",
+    required=True
+)
 
 @api.route('/inferDoc/')
 class InferDoc(Resource):
@@ -55,12 +66,15 @@ class InferDoc(Resource):
         args = infer_doc_parser.parse_args()
 
         text_to_infer = args['text_to_infer']
+        cpv = args["cpv"]
+        granularity = args["granularity"]
+        model_to_infer = f"{cpv}_{granularity}"
         
         # We look for the model in case the user did not write the name properly
-        look_dir = pathlib.Path("/data/source")
+        look_dir = pathlib.Path("/data/source/cpv_models")
         model_path = None
         for folder in os.listdir(look_dir):
-            if folder.lower() == args["model_for_infer"].lower():
+            if folder.lower() == model_to_infer.lower():
                 model_path = folder
                 logger.info(f"-- -- Model found at: {model_path}")
 
@@ -86,9 +100,12 @@ class InferDoc(Resource):
             return response, sc
 
         # Perform inference
+        text_to_infer_lst = text_to_infer.split(",")
+        if len(text_to_infer_lst) == 1:
+            text_to_infer_lst = [text_to_infer]
         try:
             thetas = inferencer.predict(
-                texts=[text_to_infer],
+                texts=text_to_infer_lst,
                 model_for_infer_path=model_for_infer
             )
 

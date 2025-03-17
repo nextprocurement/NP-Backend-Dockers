@@ -25,7 +25,7 @@ api = Namespace('Lemmatization operations')
 # ======================================================
 get_lemmas_parser = reqparse.RequestParser()
 get_lemmas_parser.add_argument("text_to_lemmatize",
-                                help="Text to be lemmatize",
+                                help="Document or documents to lemmatize, separated by commas.",
                                 required=True)
 get_lemmas_parser.add_argument('lang',
                                 help='Language of the text to be lemmatize (es/en)',
@@ -55,8 +55,13 @@ class getLemmas(Resource):
         args = get_lemmas_parser.parse_args()
 
         try:
+            
+            text_to_lemmatize = args['text_to_lemmatize'].split(",")
+            if isinstance(text_to_lemmatize, str):
+                text_to_lemmatize = [text_to_lemmatize]
+            
             lemmas = lemmatizer_manager.lemmatize(
-                args['text_to_lemmatize'],
+                text_to_lemmatize,
                 args['lang']
             )
             
@@ -96,5 +101,3 @@ class getLemmas(Resource):
                 "response": None
             }
             return response, sc
-
-       

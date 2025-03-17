@@ -98,7 +98,6 @@ class Model(object):
             tr_config = json.load(fin)
 
         # Get model information as dataframe, where each row is a topic
-        self._logger.info("Lllega aqui.")
         df, vocab_id2w, vocab = self.tmmodel.to_dataframe()
         df = df.apply(pd.Series.explode)
         df.reset_index(drop=True)
@@ -118,18 +117,15 @@ class Model(object):
             lambda x: get_betas_scale(x, self.betas_max_sum))
 
         # Get words in each topic
-        def get_tp_words(vector: np.array,
-                         vocab_id2w: dict) -> str:
+        def get_tp_words(vector: np.array,vocab_id2w: dict) -> str:
             return ", ".join([vocab_id2w[str(idx)] for idx, val in enumerate(vector) if val != 0])
 
         df["vocab"] = df["betas"].apply(
             lambda x: get_tp_words(x, vocab_id2w))
 
         # Get betas string representation
-        def get_tp_str_rpr(vector: np.array,
-                           vocab_id2w: dict) -> str:
-            rpr = " ".join([f"{vocab_id2w[str(idx)]}|{val}" for idx,
-                           val in enumerate(vector) if val != 0]).rstrip()
+        def get_tp_str_rpr(vector: np.array,vocab_id2w: dict) -> str:
+            rpr = " ".join([f"{vocab_id2w[str(idx)]}|{val}" for idx,val in enumerate(vector) if val != 0]).rstrip()
             return rpr
 
         df["betas"] = df["betas_scale"].apply(
@@ -137,13 +133,11 @@ class Model(object):
 
         def get_top_words_betas(row, vocab, n_words=15):
             # a row is a topic
-            word_tfidf_dict = {vocab[idx2]: row["betas_ds"][idx2]
-                               for idx2 in np.argsort(row["betas_ds"])[::-1][:n_words]}
+            word_tfidf_dict = {vocab[idx2]: row["betas_ds"][idx2] for idx2 in np.argsort(row["betas_ds"])[::-1][:n_words]}
 
             # Transform such as value0 = 100 % and following values are relative to value0
             value0 = word_tfidf_dict[list(word_tfidf_dict.keys())[0]]
-            word_tfidf_dict = {word: round((val/value0)*100, 3)
-                               for word, val in word_tfidf_dict.items()}
+            word_tfidf_dict = {word: round((val/value0)*100, 3) for word, val in word_tfidf_dict.items()}
             rpr = " ".join(
                 [f"{word}|{word_tfidf_dict[word]}" for word in word_tfidf_dict.keys()]).rstrip()
 
@@ -192,7 +186,7 @@ class Model(object):
         if self.corpus_name.endswith(".parquet") or self.corpus_name.endswith(".json"):
             self.corpus_name = self.corpus_name.split(".")[0].lower()
 
-        # Keys for dodument-topic proportions and similarity that will be used within the corpus collection
+        # Keys for document-topic proportions and similarity that will be used within the corpus collection
         model_key = 'doctpc_' + self.name
         sim_model_key = 'sim_' + self.name
 
@@ -207,12 +201,6 @@ class Model(object):
                 return id_
             with open(self.path_to_model.joinpath("train_data").joinpath("corpus.txt"), encoding="utf-8") as file:
                 ids_corpus = [process_line(line) for line in file]
-        elif tr_config["trainer"].lower() == "prodlda" or \
-                tr_config["trainer"].lower() == "ctm":
-            ddf = dd.read_parquet(
-                self.path_to_model.joinpath("corpus.parquet"))
-            with ProgressBar():
-                ids_corpus = ddf["id"].compute(scheduler='processes')
         else:
             self._logger.error(
                 '-- -- The trainer used to train the model is not supported.')
@@ -245,8 +233,7 @@ class Model(object):
 
             self._logger.info("Attaining thetas rpr...")
             thetas_dense = self.thetas.todense()
-            doc_tpc_rpr = [get_doc_str_rpr(thetas_dense[row, :], self.thetas_max_sum)
-                           for row in range(len(thetas_dense))]
+            doc_tpc_rpr = [get_doc_str_rpr(thetas_dense[row, :], self.thetas_max_sum) for row in range(len(thetas_dense))]
 
             # Get similarities string representation
             self._logger.info("Attaining sims rpr...")
@@ -257,8 +244,7 @@ class Model(object):
                 "Thetas and sims attained. Creating dataframe...")
 
             # Save the information in a dataframe
-            df = pd.DataFrame(list(zip(ids_corpus, doc_tpc_rpr, sim_rpr)),
-                              columns=['id', model_key, sim_model_key])
+            df = pd.DataFrame(list(zip(ids_corpus, doc_tpc_rpr, sim_rpr)), columns=['id', model_key, sim_model_key])
             self._logger.info(
                 f"Dataframe created. Printing columns:{df.columns.tolist()}")
 

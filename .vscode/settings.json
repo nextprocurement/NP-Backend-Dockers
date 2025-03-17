@@ -1,16 +1,25 @@
 {
     "cSpell.words": [
+        "bhattacharyya",
         "colname",
         "completo",
+        "embedder",
         "embs",
         "Excepción",
+        "Lemmatizer",
         "nptooler",
+        "nptools",
         "obtenido",
         "opendata",
         "pyme",
         "secundaria",
+        "setuptools",
         "solicitud",
+        "spacy",
         "sproc",
-        "Subentity"
+        "Subentity",
+        "tfidf",
+        "trainconfig",
+        "xvzf"
     ]
 }

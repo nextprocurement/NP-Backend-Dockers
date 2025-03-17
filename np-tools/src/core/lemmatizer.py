@@ -7,8 +7,9 @@ Date: 07/03/2024
 
 import configparser
 import logging
+from typing import List
 import spacy
-
+import pandas as pd
 
 class Lemmatizer(object):
     def __init__(
@@ -34,11 +35,11 @@ class Lemmatizer(object):
 
     def lemmatize(
         self,
-        text: str,
+        text: List[str],
         language: str = "es",
     ) -> str:
         """
-        Lemmatizes a given text.
+        Lemmatize a given text.
 
         Parameters
         ----------
@@ -63,7 +64,15 @@ class Lemmatizer(object):
             raise ValueError(
                 "Language not supported. Please use 'es' or 'en'.")
 
-        doc = nlp(text)
-        lemmatized_words = [token.lemma_ for token in doc]
+        # convert to dataframe for efficiency
+        df_text = pd.DataFrame(text, columns=["text"])
+        
+        def lemmatize_text(text: str) -> str:
+            doc = nlp(text)
+            lemmatized_words = [token.lemma_ for token in doc]
 
-        return " ".join(lemmatized_words)
+            return " ".join(lemmatized_words)
+        
+        df_text["lemmatized_text"] = df_text["text"].apply(lemmatize_text)
+
+        return df_text["lemmatized_text"].values.tolist()

@@ -174,21 +174,20 @@ class Queries(object):
         # ################################################################
         self.Q21 = {
             'q': "{{!knn f=embeddings topK=100}}{}",
-            'fl': "id,title,link,place_id,score",
+            'fl': "id,objective,link,place_id,score",
             'start': '{}',
             'rows': '{}'
         }
         # ================================================================
-        # # Q22: getDocsSimilarToFreeTextEmbAndBM25
-        # BM25 retrieves the most relevant documents based on keyword matching and ranking.
-        # KNN embeddings then refine the results, making the search more semantic-aware.
-        self.Q22 = {
-            'q': "{{!edismax qf={}}} {}",
-            'rq': "{{!knn f=embeddings topK=100}}{}",
-            'fl': "id,title,link,place_id,score",
+        # # Q21_e: getDocsSimilarToFreeTextEmbAndBM25
+        self.Q21_e = {
+            'q': "{{!knn f=embeddings topK=100}}{}",
+            'fq': '{{!edismax qf={}}} {}',
+            'fl': 'id,objective,link,place_id,score',
             'start': '{}',
             'rows': '{}'
         }
+
 
 
     def customize_Q1(self,
@@ -560,7 +559,7 @@ class Queries(object):
         }
         return custom_q21
     
-    def customize_Q22(
+    def customize_Q21_e(
         self,
         doc_embeddings: str,
         keyword: str,
@@ -568,7 +567,7 @@ class Queries(object):
         rows: str,
         query_fields: str
     ) -> dict:
-        """Customizes query Q22 'getDocsSimilarToFreeTextEmbAndBM25'
+        """Customizes query Q21_e 'getDocsSimilarToFreeTextEmbAndBM25'
 
         Parameters
         ----------
@@ -583,15 +582,15 @@ class Queries(object):
 
         Returns
         -------
-        custom_q5: dict
-            Customized query Q5.
+        custom_q21_e: dict
+            Customized query Q21_e.
         """
 
-        custom_q22 = {
-            'q': self.Q22['q'].format(query_fields, keyword),
-            'rq': self.Q22['rq'].format(doc_embeddings),
-            'fl': self.Q22['fl'],
-            'start': self.Q22['start'].format(start),
-            'rows': self.Q22['rows'].format(rows),
+        custom_q21_e = {
+            'q': self.Q21_e['q'].format(doc_embeddings),
+            'fq': self.Q21_e['fq'].format(query_fields, keyword),
+            'fl': self.Q21_e['fl'],
+            'start': self.Q21_e['start'].format(start),
+            'rows': self.Q21_e['rows'].format(rows),
         }
-        return custom_q22
+        return custom_q21_e

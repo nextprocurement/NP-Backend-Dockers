@@ -9,13 +9,22 @@ import logging
 import pathlib
 import sys
 from typing import List
+import os
 import random
 
 import numpy as np
-import pandas as pd
-from sklearn.preprocessing import normalize
+import pandas as pd # type: ignore
+from sklearn.preprocessing import normalize # type: ignore
 sys.path.append('../')
 from src.TopicModeling.BaseModel import BaseModel
+
+MALLET_HOME = "/opt/mallet"
+JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
+JAVA_8_PATH = "/usr/lib/jvm/java-8-openjdk-amd64/bin/java"
+
+# Ensure Java 8 is set
+os.environ["JAVA_HOME"] = JAVA_HOME
+os.environ["PATH"] = f"{JAVA_HOME}/bin:{MALLET_HOME}/bin:{os.environ['PATH']}"
 
 def sum_up_to(vector: np.ndarray, max_sum: int) -> np.ndarray:
     """It takes in a vector and a max_sum value and returns a NumPy array with the same shape as vector but with the values adjusted such that their sum is equal to max_sum.
@@ -150,7 +159,8 @@ class Inferencer(object):
         infer_thetas = model._model_predict(
             texts=texts,
             path_model=model_for_infer_path,
-            path_mallet="/app/Mallet/bin/mallet",
+            #path_mallet="/app/Mallet/bin/mallet",
+            path_mallet=f"{MALLET_HOME}/bin/mallet",
             save_temp=False)
 
         self._logger.info(

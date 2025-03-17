@@ -123,20 +123,12 @@ q21_parser.add_argument(
 q21_parser.add_argument(
     'free_text', help="Document (free text) to search for documents that are similar to it.", required=True)
 q21_parser.add_argument(
+    "keyword", 
+    help="An optional keyword used for filtering documents. If provided, the search will return documents that contain this keyword in addition to semantic similarity.", 
+    required=False)
+q21_parser.add_argument(
     'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
 q21_parser.add_argument(
-    'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
-
-q22_parser = reqparse.RequestParser()
-q22_parser.add_argument(
-    'corpus_collection', help='Name of the corpus collection', required=True)
-q22_parser.add_argument(
-    'free_text', help="Document (free text) to search for documents that are similar to it.", required=True)
-q22_parser.add_argument(
-    "keyword", help="Keyword to search for documents that are similar to it.", required=True)
-q22_parser.add_argument(
-    'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
-q22_parser.add_argument(
     'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
 
 
@@ -354,27 +346,3 @@ class getDocsSimilarToFreeTextEmb(Resource):
             )
         except Exception as e:
             return str(e), 500
-        
-        
-@api.route('/getDocsSimilarToFreeTextEmbAndBM25/')
-class getDocsSimilarToFreeTextEmbAndBM25(Resource):
-    @api.doc(parser=q22_parser)
-    def get(self):
-        args = q22_parser.parse_args()
-        corpus_collection = args['corpus_collection']
-        doc = args['free_text']
-        keyword = args['keyword']
-        start = args['start']
-        rows = args['rows']
-        try:
-            return sc.do_Q22(
-                corpus_col=corpus_collection,
-                search_doc=doc,
-                keyword=keyword,
-                embedding_model="bert",
-                start=start,
-                rows=rows
-            )
-        except Exception as e:
-            return str(e), 500
-

@@ -1452,6 +1452,8 @@ class NPSolrClient(SolrClient):
         start:int,
         rows:int,
         embedding_model:str = "bert",
+        keyword:str = None,
+        query_fields:str="raw_text", #"tile objective"
         lang:str = "es",
     ) -> Union[dict,int]:
         """
@@ -1505,8 +1507,17 @@ class NPSolrClient(SolrClient):
         start, rows = self.custom_start_and_rows(start, rows, corpus_col)
         
         # 5. Calculate cosine similarity between the embedding of search_doc and the embeddings of the documents in the corpus
-        q21 = self.querier.customize_Q21(
+        if keyword is None:
+            q21 = self.querier.customize_Q21(
+                doc_embeddings=embs,
+                start=start,
+                rows=rows
+            )
+        else:
+            q21 = self.querier.customize_Q21_e(
             doc_embeddings=embs,
+            keyword=keyword,
+            query_fields=query_fields,
             start=start,
             rows=rows
         )
@@ -1522,87 +1533,90 @@ class NPSolrClient(SolrClient):
 
         return results.docs, sc
     
-    def do_Q22(
+    def do_Q22( # this is not a predefined query, but a wrapper over the inferencer that gets the information for the predicted topic
         self,
-        corpus_col:str,
-        search_doc:str,
-        keyword:str,
-        start:int,
-        rows:int,
-        embedding_model:str = "bert",
-        query_fields:str="title", #"tile objective"
-        lang:str = "es",
-    ) -> Union[dict,int]:
-        """
-        Executes query Q21.
-        
+        corpus_col: str,
+        model_name: str,
+        text_to_infer: str,
+        start: str,
+        rows: str
+    ) -> Union[dict, int]:
+        """Executes query Q14.
+
         Parameters
         ----------
-        corpus_col: str
+        corpus_col : str
             Name of the corpus collection
-        search_doc: str
-            Document to look documents similar to
-        keyword: str
-            Keyword to filter the documents
-        start: int
-            Index of the first document to be retrieved
-        rows: int
-            Number of documents to be retrieved
-        embedding_model: str
-            Name of the embedding model to be used
-        query_fields: str
-            Fields on which BM25 search will be applied
-        lang: str
-            Language of the text to be embedded
-        
+        model_name: str
+            Name of the topic model to be used for the retrieval
+        text_to_infer: str
+            Text to be inferred
+        start: str
+            Offset into the responses at which Solr should begin displaying content
+        rows: str
+            How many rows of responses are displayed at a time
+
         Returns
         -------
-        response: dict
+        json_object: dict
             JSON object with the results of the query.
+        sc : int
+            The status code of the response.
         """
-        
-        # 0. Convert corpus to lowercase
+
+        # 0. Convert corpus and model names to lowercase
         corpus_col = corpus_col.lower()
-        
+        model_col = model_name.lower()
+
         # 1. Check that corpus_col is indeed a corpus collection
         if not self.check_is_corpus(corpus_col):
             return
-        
-        # 3. Get embedding from search_doc
-        resp = self.nptooler.get_embedding(
-            text_to_embed=search_doc,
-            embedding_model=embedding_model,
-            lang=lang
-        )
-        
-        if resp.status_code != 200:
-            self.logger.error(
-                f"-- -- Error attaining embeddings from {search_doc} while executing query Q22. Aborting operation...")
+
+        # 2. Check that corpus_col has the model_col field
+        if not self.check_corpus_has_model(corpus_col, model_col):
             return
 
-        embs = resp.results
+        # 3. Make request to NPTools API to get thetas of text_to_infer
+        # Get text (lemmas) of the document so its thetas can be inferred
+        lemmas_resp = self.nptooler.get_lemmas(text_to_lemmatize=text_to_infer, lang="es")
+        lemmas = lemmas_resp.results[0]['lemmas']
+        
         self.logger.info(
-            f"-- -- Embbedings for doc {search_doc} attained in {resp.time} seconds.")
-         
+            f"-- -- Lemmas attained in {lemmas_resp.time} seconds: {lemmas}")
+        
+        inf_resp = self.nptooler.get_thetas(text_to_infer=lemmas,
+                                    model_for_infer=model_name)
+
+        if inf_resp.status_code != 200:
+            self.logger.error(
+                f"-- -- Error attaining thetas from {lemmas} while executing query Q5. Aborting operation...")
+            return
+
+        thetas = inf_resp.results[0]['thetas']
+        
+        self.logger.info(
+            f"-- -- Thetas attained in {inf_resp.time} seconds: {thetas}")
+
         # 4. Customize start and rows
         start, rows = self.custom_start_and_rows(start, rows, corpus_col)
         
-        # 5. Calculate cosine similarity between the embedding of search_doc and the embeddings of the documents in the corpus
-        q21 = self.querier.customize_Q22(
-            doc_embeddings=embs,
-            keyword=keyword,
-            query_fields=query_fields,
-            start=start,
-            rows=rows
-        )
-        params = {k: v for k, v in q21.items() if k != 'q'}
-
+        # 5. Execute query
+        distance = "bhattacharyya"
+        q14 = self.querier.customize_Q14(
+            model_name=model_col, thetas=thetas, distance=distance,
+            start=start, rows=rows)
+        params = {k: v for k, v in q14.items() if k != 'q'}
+        
         sc, results = self.execute_query(
-            q=q21['q'], col_name=corpus_col, **params)
-
+            q=q14['q'], col_name=corpus_col, **params)
+        
         if sc != 200:
             self.logger.error(
-                f"-- -- Error executing query Q22. Aborting operation...")
+                f"-- -- Error executing query Q14. Aborting operation...")
             return
+
+        # 6. Normalize scores
+        for el in results.docs:
+            el['score'] *= (100/(self.thetas_max_sum ^ 2))
 
         return results.docs, sc

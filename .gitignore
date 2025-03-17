@@ -162,3 +162,5 @@ cython_debug/
 db
 data
 *.DS_Store
+stats_procurement.txt
+np-tools/mallet-2.0.8

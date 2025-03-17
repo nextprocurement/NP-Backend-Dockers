@@ -91,6 +91,18 @@ class MalletLDAModel(BaseModel):
 
         # Convert corpus.txt to corpus.mallet
         self.logger.info("Creating corpus.mallet...")
+        
+        texts_txt_path_tr = pathlib.Path(path_model) / "train_data/corpus.txt"
+        texts_mallet_path_tr = pathlib.Path(path_model) / "train_data/corpus.mallet"
+        cmd_pre = (
+            f"{mallet_path} import-file "
+            f"--input {texts_txt_path_tr} "
+            f"--output {texts_mallet_path_tr} "
+            f"--keep-sequence "
+        )
+        self.logger.info(f"Running pre: {cmd_pre}")
+        check_output(args=cmd_pre, shell=True)
+
         cmd = (
             f"{mallet_path} import-file "
             f"--input {texts_txt_path} "
@@ -314,6 +326,7 @@ class MalletLDAModel(BaseModel):
             f"--input {texts_mallet_infer_path} "
             f"--output-doc-topics {temp_mallet_dir} "
         )
+        self.logger.info(f"Running command to infer topics: {cmd}")
         check_output(args=cmd, shell=True)
         if save_temp:
             shutil.copy(temp_mallet_dir,predicted_doctopic)

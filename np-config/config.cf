@@ -63,3 +63,10 @@ title_field=title
 date_field=date
 MetadataDisplayed=id,title,link,place_id
 SearcheableField=id,title
+
+[place_all_embeddings_metadata_only_augmented-config]
+id_field=id
+title_field=title
+date_field=date
+MetadataDisplayed=id,title,link,place_id
+SearcheableField=id,title

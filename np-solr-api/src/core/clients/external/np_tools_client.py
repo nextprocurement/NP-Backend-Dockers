@@ -9,6 +9,7 @@ Date: 21/05/2023
 
 import logging
 import os
+from typing import List
 from urllib.parse import urlencode
 
 import requests
@@ -194,7 +195,7 @@ class NPToolsClient(Client):
 
     def get_thetas(
         self,
-        text_to_infer: str,
+        text_to_infer: List[str],
         model_for_infer: str,
     ) -> NPToolsResponse:
         """Get the thetas representation for a document based on a given trained topic model. 
@@ -229,7 +230,7 @@ class NPToolsClient(Client):
         headers_ = {'Accept': 'application/json'}
 
         params_ = {
-            'text_to_infer': text_to_infer,
+            'text_to_infer': ",".join(text_to_infer),
             'model_for_infer': model_for_infer,
         }
 

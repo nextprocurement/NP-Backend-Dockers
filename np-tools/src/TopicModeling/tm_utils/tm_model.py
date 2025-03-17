@@ -1,8 +1,7 @@
 """This module is similar to the one available in the topicmodeler (https://github.com/IntelCompH2020/topicmodeler/blob/main/src/topicmodeling/manageModels.py). It provides a generic representation of all topic models used for curation purposes.
 
 Authors: Jerónimo Arenas-García, J.A. Espinosa-Melchor, Lorena Calvo-Bartolomé
-Modifed: 24/01/2024 (Updated for NP-Solr-Service (NextProcurement Proyect))
-Modified: 11/02/2024 (Updated for NP-Search-Tool (NextProcurement Proyect) to include topic labelling method based on OpenAI's GPT-X models)
+Modified: 24/01/2024 (Updated for NP-Solr-Service (NextProcurement Project))
 """
 
 import shutil
@@ -13,9 +12,6 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sparse
 from sparse_dot_topn import awesome_cossim_topn
-#from src.Embeddings.embedder import Embedder
-#from .topic_labeller import TopicLabeller
-
 
 class TMmodel(object):
     # This class represents a Topic Model according to the LDA generative model
@@ -569,64 +565,6 @@ class TMmodel(object):
         if self._tpc_descriptions is None:
             with self._TMfolder.joinpath('tpc_descriptions.txt').open('r', encoding='utf8') as fin:
                 self._tpc_descriptions = [el.strip() for el in fin.readlines()]
-
-    def get_tpc_labels(self):
-        """returns the labels of the topics in the model
-
-        Parameters
-        ----------
-        labels: list
-            List of labels for automatic topic labeling
-        use_cuda: bool
-            If True, use cuda.
-
-        Returns
-        -------
-        tpc_labels: list of tuples
-            Each element is a a term (topic_id, "label for topic topic_id")                    
-        """
-
-        # Load tpc descriptions
-        self.load_tpc_descriptions()
-
-        # Create a topic labeller object
-        tl = TopicLabeller(model="gpt-4")
-
-        # Get labels
-        aux = [string.replace("'", '"') for string in self._tpc_descriptions]
-        labels = tl.get_labels(aux)
-        labels_format = [(i, p) for i, p in enumerate(labels)]
-
-        return labels_format
-
-    def load_tpc_labels(self):
-        if self._tpc_labels is None:
-            with self._TMfolder.joinpath('tpc_labels.txt').open('r', encoding='utf8') as fin:
-                self._tpc_labels = [el.strip() for el in fin.readlines()]
-
-    def get_tpc_word_descriptions_embeddings(self):
-
-        # Load topc descriptions
-        self.load_tpc_descriptions()
-
-        # Create embedder
-        emb = Embedder()  # TODO configure parameters
-
-        embed_from = [
-            el.split(", ") for el in self._tpc_descriptions
-        ]
-
-        corpus_path = self._TMfolder.parent.parent.joinpath(
-            'train_data/corpus.txt')
-
-        tpc_embeddings = emb.infer_embeddings(
-            embed_from=embed_from,
-            method="word2vec",
-            do_train_w2vec=True,
-            corpus_file=corpus_path
-        )
-
-        return tpc_embeddings
 
     def load_tpc_word_descriptions_embeddings(self):
 
