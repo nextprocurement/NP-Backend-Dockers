@@ -137,14 +137,14 @@ class NPToolsClient(Client):
 
         encoded_params = urlencode(params_)
 
-        url_ = '{}/embedder/getEmbedding/?{}'.format(
+        url_ = '{}/embedding/generate/?{}'.format(
             self.nptools_url, encoded_params)
 
         self.logger.info(f"-- -- get_embedding - URL: {url_}")
 
         # Send request to NPtooler
         resp = self._do_request(
-            type="get", url=url_, timeout=self.timeout, headers=headers_)
+            type="post", url=url_, timeout=self.timeout, headers=headers_)
 
         self.logger.info(f"-- -- get_embedding - Response: {resp}")
 
@@ -180,14 +180,14 @@ class NPToolsClient(Client):
 
         encoded_params = urlencode(params_)
 
-        url_ = '{}/lemmatizer/getLemmas/?{}'.format(
+        url_ = '{}/lemmatization/extract/?{}'.format(
             self.nptools_url, encoded_params)
 
         self.logger.info(f"-- -- get_lemmas - URL: {url_}")
 
         # Send request to NPtooler
         resp = self._do_request(
-            type="get", url=url_, timeout=self.timeout, headers=headers_)
+            type="post", url=url_, timeout=self.timeout, headers=headers_)
 
         self.logger.info(f"-- -- get_lemmas - Response: {resp}")
 
@@ -236,14 +236,14 @@ class NPToolsClient(Client):
 
         encoded_params = urlencode(params_)
 
-        url_ = '{}/inferencer/inferDoc/?{}'.format(
+        url_ = '{}/inference/predict/?{}'.format(
             self.nptools_url, encoded_params)
 
         self.logger.info(f"-- -- get_thetas - URL: {url_}")
 
         # Send request to NPtooler
         resp = self._do_request(
-            type="get", url=url_, timeout=self.timeout, headers=headers_)
+            type="post", url=url_, timeout=self.timeout, headers=headers_)
 
         self.logger.info(f"-- -- get_thetas - Response: {resp}")
 

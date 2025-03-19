@@ -13,12 +13,12 @@ from flask_restx import Namespace, Resource, reqparse
 from src.core.lemmatizer import Lemmatizer
 
 logging.basicConfig(level='DEBUG')
-logger = logging.getLogger('Lemmtizer')
+logger = logging.getLogger('Lemmatizer')
 
 # ======================================================
-# Define namespace for lemmatization operations
+# Define namespace for Lemmatization
 # ======================================================
-api = Namespace('Lemmatization operations')
+api = Namespace('Lemmatization')
 
 # ======================================================
 # Define parsers to take inputs from user
@@ -39,8 +39,8 @@ get_lemmas_parser.add_argument('lang',
 lemmatizer_manager = Lemmatizer(logger=logger)
 
 
-@api.route('/getLemmas/')
-class getLemmas(Resource):
+@api.route('/extract/')
+class extract(Resource):
     @api.doc(
         parser=get_lemmas_parser,
         responses={
@@ -48,7 +48,7 @@ class getLemmas(Resource):
             501: 'Lemmas generation error: An error occurred while generating the lemmas',
         }
     )
-    def get(self):
+    def post(self):
 
         start_time = time.time()
 

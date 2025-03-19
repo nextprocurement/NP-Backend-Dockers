@@ -1375,7 +1375,13 @@ class NPSolrClient(SolrClient):
         
         # 2. Check that corpus_col has the model_name field
         if not self.check_corpus_has_model(corpus_col, model_col):
-            return
+            default_model = f"default_{model_col.split('_')[-1]}"
+            if not self.check_corpus_has_model(corpus_col, default_model):
+                return
+            model_col = default_model
+            model_name = model_col
+            self.logger.info(
+                f"-- -- Model {model_col} not found in {corpus_col}. Using {default_model} instead.")
 
         # 3. Lemmatize and get embedding from search_word
         resp = self.nptooler.get_embedding(
@@ -1438,7 +1444,7 @@ class NPSolrClient(SolrClient):
         # 7. Return the id of the topic, the similarity score, and the top documents for that topic
         response = {
             "topic_id": closest_tpc,
-            "topoc_str": "t" + closest_tpc,
+            "topic_str": "t" + closest_tpc,
             "similarity_score": sim_score,
             "docs": docs
         }

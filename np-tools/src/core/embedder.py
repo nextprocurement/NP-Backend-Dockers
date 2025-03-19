@@ -285,8 +285,7 @@ class Embedder(object):
         model.max_seq_length = self._max_sequence_length
         
         def encode_text(text):
-            embedding = model.encode(text,
-                                     show_progress_bar=True, batch_size=batch_size)
+            embedding = model.encode(text,show_progress_bar=True, batch_size=batch_size)
             # Convert to string
             embedding = ' '.join(str(x) for x in embedding)
             return embedding

@@ -24,6 +24,8 @@ services:
       - ./np-config:/config
     deploy:
       resources:
+        limits:
+          memory: 100GB
         reservations:
           devices:
             - driver: nvidia
@@ -44,6 +46,8 @@ services:
       - ./np-config:/config
     deploy:
       resources:
+        limits:
+          memory: 100GB
         reservations:
           devices:
             - driver: nvidia
@@ -69,6 +73,7 @@ services:
       - ./db/data/solr:/var/solr
       - ./solr-plugins/NP-solr-dist-plugin/NP-solr-dist-plugin.jar:/opt/solr/dist/plugins/NP-solr-dist-plugin.jar
       - ./solr-config:/opt/solr/server/solr
+      - ./solr-config/solr.in.sh:/etc/default/solr.in.sh
     ports:
       - 8984:8983
     entrypoint:
@@ -83,8 +88,13 @@ services:
       - "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044 -Djute.maxbuffer=0x5000000"
     environment:
       - SOLR_OPTS=-Dsolr.jetty.request.header.size=65535
+      - SOLR_JAVA_MEM=-Xms1g -Xmx1g
     networks:
       - np-net
+    deploy:
+      resources:
+        limits:
+          memory: 100GB
 
   zoo:
     image: zookeeper
@@ -100,6 +110,10 @@ services:
       - ./db/data/zoo/logs:/datalog
     networks:
       - np-net
+    deploy:
+      resources:
+        limits:
+          memory: 100GB
 
   solr-config:
     build: ./solr-config
@@ -119,3 +133,7 @@ services:
       - sh
       - -c
       - "chmod +x /bash_scripts/init_config.sh && ls /bash_scripts && bash_scripts/init_config.sh /db/data/solr/data"
+    deploy:
+      resources:
+        limits:
+          memory: 100GB

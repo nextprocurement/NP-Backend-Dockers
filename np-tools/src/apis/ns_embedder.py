@@ -20,7 +20,7 @@ logger = logging.getLogger('Embedder')
 # ======================================================
 # Define namespace for embedding operations
 # ======================================================
-api = Namespace('Embedding operations')
+api = Namespace('Embeddings')
 
 # ======================================================
 # Define parsers to take inputs from user
@@ -49,8 +49,8 @@ embedder_manager = Embedder(logger=logger)
 lemmatizer_manager = Lemmatizer(logger=logger)
 
 
-@api.route('/getEmbedding/')
-class getEmbedding(Resource):
+@api.route('/generate/')
+class generate(Resource):
     @api.doc(
         parser=get_embedding_parser,
         responses={
@@ -61,7 +61,7 @@ class getEmbedding(Resource):
             504: 'Embeddings generation error: An error occurred while generating the embeddings'
         }
     )
-    def get(self):
+    def post(self):
 
         start_time = time.time()
 
@@ -69,7 +69,7 @@ class getEmbedding(Resource):
 
         if args['embedding_model'] == 'word2vec':
             # Get the path of the model (topic model) on the basis of which the embeddings will be generated
-            look_dir = pathlib.Path("/data/source")
+            look_dir = pathlib.Path("/data/source/cpv_models")
             tm_path = None
             for folder in os.listdir(look_dir):
                 if folder.lower() == args["model"].lower():
@@ -77,33 +77,45 @@ class getEmbedding(Resource):
             
             if tm_path is not None:
                 model_path = look_dir / tm_path /("train_data") / ("model_w2v_corpus.model")
-                logger.info(
-                    f"-- -- Model for embeddings: {model_path.as_posix()}"
-                )
+                logger.info(f"-- -- Model for embeddings: {model_path.as_posix()}")
+                
             else:
-                model_path = args["model"]
-                end_time = time.time() - start_time
-                sc = 501
-                responseHeader = {
-                    "status": sc,
-                    "time": end_time,
-                    "error": f"Model for embeddings not found: {model_path}"
-                }
-                response = {
-                    "responseHeader": responseHeader,
-                    "response": None
-                }
-                return response, sc
+                # use default model if available and the given model does not exist
+                if (look_dir / f"default_{args["model"].split("_")[-1]}" /("train_data") / ("model_w2v_corpus.model")).is_file():
+                    model_path = look_dir / f"default_{args["model"].split("_")[-1]}" /("train_data") / ("model_w2v_corpus.model")
+                    
+                    logger.info(
+                    f"-- -- Using embedding model of the default topic model: {model_path.as_posix()}"
+                )
+                else:
+                    model_path = args["model"]
+                    end_time = time.time() - start_time
+                    sc = 501
+                    responseHeader = {
+                        "status": sc,
+                        "time": end_time,
+                        "error": f"Model for embeddings not found: {model_path}"
+                    }
+                    response = {
+                        "responseHeader": responseHeader,
+                        "response": None
+                    }
+                    return response, sc
 
             logger.info(f"-- --Model path: {model_path.as_posix()}")
 
         if args['embedding_model'] == 'word2vec':
             # If the embedding model is word2vec, lemmatize the text
             try:
+                text_to_lemmatize = args['text_to_embed'].split(",")
+                if isinstance(text_to_lemmatize, str):
+                    text_to_lemmatize = [text_to_lemmatize]
+                logger.info(f"-- -- Text to lemmatize: {text_to_lemmatize}")   
                 text_to_embed = lemmatizer_manager.lemmatize(
-                    args['text_to_embed'],
+                    text_to_lemmatize,
                     args['lang']
                 )
+                logger.info(f"-- -- Text lemmatized: {text_to_embed}")
             except Exception as e:
                 end_time = time.time() - start_time
                 sc = 502
@@ -120,7 +132,7 @@ class getEmbedding(Resource):
 
         elif args['embedding_model'] == 'bert':
             # If the embedding model is bert, no need to lemmatize the text
-            text_to_embed = args['text_to_embed']
+            text_to_embed = [args['text_to_embed'].strip('"')]
             model_path = None
 
         elif args['embedding_model'] not in ['word2vec', 'bert']:
@@ -141,7 +153,7 @@ class getEmbedding(Resource):
 
             # Generate embeddings
             embeddings = embedder_manager.infer_embeddings(
-                embed_from=[text_to_embed],
+                embed_from=text_to_embed,
                 method=args["embedding_model"],
                 model_path=model_path
             )

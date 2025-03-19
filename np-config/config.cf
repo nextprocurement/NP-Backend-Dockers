@@ -51,22 +51,22 @@ MetadataDisplayed=identifier,title,link,place_id
 SearcheableField=identifier,title
 
 [place_all_embeddings_metadata-config]
-id_field=id
+id_field=place_id
 title_field=title
 date_field=date
-MetadataDisplayed=id,title,link,place_id
+MetadataDisplayed=id,title,link
 SearcheableField=id,title
 
 [sample-config]
-id_field=id
+id_field=place_id
 title_field=title
 date_field=date
-MetadataDisplayed=id,title,link,place_id
+MetadataDisplayed=id,title,link
 SearcheableField=id,title
 
 [place_all_embeddings_metadata_only_augmented-config]
-id_field=id
+id_field=place_id
 title_field=title
 date_field=date
-MetadataDisplayed=id,title,link,place_id
-SearcheableField=id,title
+MetadataDisplayed=id,objective,link
+SearcheableField=id,objective

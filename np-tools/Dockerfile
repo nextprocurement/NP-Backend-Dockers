@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update && apt-get install -y --no-install-recommends \
     openjdk-8-jdk \
+    poppler-utils \
     python3.12 python3.12-dev python3.12-venv python3-pip \
     git ant wget curl \
     libbz2-dev libffi-dev libgdbm-dev libncurses5-dev \
@@ -64,6 +65,9 @@ COPY mallet-2.0.8/ /opt/mallet/
 ARG MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 RUN python -c "from sentence_transformers import SentenceTransformer; \
     SentenceTransformer('${MODEL_NAME}').save('/tmp/huggingface')"
+
+RUN mkdir -p /venv/lib/python3.12/site-packages/frontend/static
+
 
 # Copy project files
 COPY . .

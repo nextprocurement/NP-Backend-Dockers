@@ -1,3 +1,4 @@
+import argparse
 import logging
 import pathlib
 import pickle
@@ -12,7 +13,7 @@ import pathlib
 from sklearn.model_selection import train_test_split
 from dspy.teleprompt import BootstrapFewShotWithRandomSearch
 from bert_score import score
-from src.objective_tender_extraction.prompter import Prompter
+from src.prompter import Prompter
 from src.utils.utils import init_logger
 from dspy.evaluate import Evaluate
 import ujson
@@ -115,7 +116,7 @@ def find_object_pos(texto, objetos):
             #regex_obj = r"\b" + re.escape(obj_lower) + r"\b(?!\.)"
 
         matches = list(re.finditer(regex_obj, texto_corto))
-        #print(matches)
+        #self._logger.info(matches)
 
         # Guardamos todas las coincidencias en la lista
         for match in matches:
@@ -232,18 +233,18 @@ class ObjetiveExtractorModule(dspy.Module):
             return text
 
     def forward(self, text):
-        print("** ** the length of the text is: ", len(text))
+        self._logger.info("** ** the length of the text is: ", len(text))
         pred = self.predict(TENDER=text)
 
         return dspy.Prediction(objective=self._process_output(pred.OBJECTIVE))
     
     def dump_state(self, save_verbose=False, ensure_ascii=False, escape_forward_slashes=False):
         
-        print(self.named_parameters())
+        self._logger.info(self.named_parameters())
         return {name: param.dump_state() for name, param in self.named_parameters()}
     
     def save(self, path, save_field_meta=False):
-        print("*"*50)
+        self._logger.info("*"*50)
         with open(path, "w") as f:
             f.write(ujson.dumps(self.dump_state(save_field_meta), indent=2, ensure_ascii=False, escape_forward_slashes=False))
 
@@ -251,7 +252,7 @@ class ObjetiveExtractorModule(dspy.Module):
 #######################################################################
 # ObjetiveExtractor
 #######################################################################
-class ObjetiveExtractor(object):
+class ObjectiveExtractor(object):
     def __init__(
         self,
         model_type: str = "llama",
@@ -441,9 +442,9 @@ class ObjetiveExtractor(object):
             f"-- -- BERT score on test set: {df[['P', 'R', 'F1']].mean()}")
         self._logger.info(
             f"-- -- Mean score on test set: {df['METRIC'].mean()}")
-        print(
+        self._logger.info(
             f"-- -- BERT score on test set: {df[['P', 'R', 'F1']].mean()}")
-        print(
+        self._logger.info(
             f"-- -- Mean score on test set: {df['METRIC'].mean()}")
 
         evaluate = Evaluate(
@@ -451,11 +452,11 @@ class ObjetiveExtractor(object):
         compiled_score = evaluate(compiled_pred)
         uncompiled_score = evaluate(ObjetiveExtractorModule())
 
-        print(
+        self._logger.info(
             f"## ObjetiveExtractorModule Score for uncompiled: {uncompiled_score}")
-        print(
+        self._logger.info(
             f"## ObjetiveExtractorModule Score for compiled: {compiled_score}")
-        print(f"Compilation Improvement: {compiled_score - uncompiled_score}%")
+        self._logger.info(f"Compilation Improvement: {compiled_score - uncompiled_score}%")
 
         return compiled_pred
 
@@ -465,7 +466,7 @@ class ObjetiveExtractor(object):
             
             processed_column = f'processed_{start_token}'
             for index, row in tqdm(df.iterrows(), total=len(df)):
-                print(f"Index {index}")
+                self._logger.info(f"Index {index}")
                 if row[processed_column]:
                     continue  # Skip rows that are already processed for this token_start
                 
@@ -476,7 +477,7 @@ class ObjetiveExtractor(object):
                         # USING MODULE
                         # ---------------------------------------------------
                         extracted_text = row[col_extract][start_token:start_token + nr_tokens]       
-                        print(f"Extracted text for index {index} (first 100 chars): {extracted_text[:100]}")
+                        self._logger.info(f"Extracted text for index {index} (first 100 chars): {extracted_text[:100]}")
                         objective = self.module(extracted_text)["objective"]
                         # ---------------------------------------------------
                         
@@ -485,21 +486,21 @@ class ObjetiveExtractor(object):
                         # ---------------------------------------------------
                         """
                         word, pos = find_object_pos(row[col_extract], OBJETOS)
-                        print(f"Word: {word} --> Pos: {pos}")
+                        self._logger.info(f"Word: {word} --> Pos: {pos}")
                         if word is None:
                             extracted_text = row[col_extract][start_token:start_token + nr_tokens]
                         else:
                             extracted_text = row[col_extract][pos:pos + nr_tokens]
                             old_token_start = start_token
                             start_token = pos
-                        print(
+                        self._logger.info(
                             f"Extracted text for index {index} (first 100 chars): {extracted_text[:200]}")
                         
                         template = self.template.format(document=extracted_text)
                         objective, _ = self.prompter.prompt(template)
                         
                         if objective == "/":
-                            print(f"Objective not found in the text. Trying with full text")
+                            self._logger.info(f"Objective not found in the text. Trying with full text")
                             extracted_text = row[col_extract][old_token_start:old_token_start + 3000]
                             template = self.template.format(document=extracted_text)
                             objective, _ = self.prompter.prompt(template)
@@ -507,34 +508,34 @@ class ObjetiveExtractor(object):
                         # ---------------------------------------------------
                         
                         # print extracted objective in a different color
-                        print(f"\033[92mTOKEN START: {start_token} --> OBJECTIVE: \n {objective}\033[0m")
+                        self._logger.info(f"\033[92mTOKEN START: {start_token} --> OBJECTIVE: \n {objective}\033[0m")
     
                         # save objective in the dataframe
                         df.loc[index, objective_column] = objective
 
-                        print(
+                        self._logger.info(
                             f"DataFrame updated with {objective_column} for index {index}")
                         break
                     except Exception as e:
-                        print(f"Exception at index {index}: {e}")
+                        self._logger.info(f"Exception at index {index}: {e}")
                         nr_tokens -= 500
                         if nr_tokens <= 0:
                             df.loc[index, objective_column] = None
-                            print(
+                            self._logger.info(
                                 f"{objective_column} set to None for index {index}")
                             break
                 score = self.get_in_text_score(df.loc[index], col_extract, objective_column, start_token, nr_tokens)
-                print(f"Score for index {index}: {score}")
+                self._logger.info(f"Score for index {index}: {score}")
                 df.loc[index, score_column] = score
                 
                 # Mark this row as processed for this token_start
                 df.loc[index, processed_column] = True
 
                 # Save checkpoint after every `save_interval` rows
-                if index % save_interval == 0:
-                    print(f"-- -- Saving checkpoint to {checkpoint_path} at row {index}")
-                    with open(checkpoint_path, 'wb') as f:
-                        pickle.dump(df, f)
+                #if index % save_interval == 0:
+                #    self._logger.info(f"-- -- Saving checkpoint to {checkpoint_path} at row {index}")
+                #    with open(checkpoint_path, 'wb') as f:
+                #        pickle.dump(df, f)
 
             return df
 
@@ -544,9 +545,9 @@ class ObjetiveExtractor(object):
             replacement_logs = []
 
             for start_token in token_starts:
-                print("*" * 50)
-                print(f"-- -- Processing start token {start_token}")
-                print("*" * 50)
+                self._logger.info("*" * 50)
+                self._logger.info(f"-- -- Processing start token {start_token}")
+                self._logger.info("*" * 50)
                 processed_column = f'processed_{start_token}'
                 if processed_column not in df.columns:
                     df[processed_column] = False  # Initialize processed column for this token_start
@@ -566,7 +567,7 @@ class ObjetiveExtractor(object):
                 df[processed_column] = df_temp[processed_column]
                 
                 replacement_logs.append((start_token, replacements))
-                print(
+                self._logger.info(
                     f"Replacements in iteration with start token {start_token}: {replacements}")
 
             for index in df.index:
@@ -577,10 +578,10 @@ class ObjetiveExtractor(object):
             return df, replacement_logs
 
         # Load checkpoint if it exists
-        if os.path.exists(checkpoint_path):
-            print(f"Loading checkpoint from {checkpoint_path}")
-            with open(checkpoint_path, 'rb') as f:
-                df = pickle.load(f)
+        #if os.path.exists(checkpoint_path):
+        #    self._logger.info(f"Loading checkpoint from {checkpoint_path}")
+        #    with open(checkpoint_path, 'rb') as f:
+        #        df = pickle.load(f)
 
         # Initialize columns if not already done
         if "objective" not in df.columns:
@@ -592,13 +593,13 @@ class ObjetiveExtractor(object):
         df, replacement_logs = process_extractions(df, col_extract, score_column="in_text_score", objective_column="objective")
 
         # Final save at the end of processing
-        print(f"Final save to {checkpoint_path}")
-        with open(checkpoint_path, 'wb') as f:
-            pickle.dump(df, f)
+        #self._logger.info(f"Final save to {checkpoint_path}")
+        #with open(checkpoint_path, 'wb') as f:
+        #    pickle.dump(df, f)
 
         # Print the replacement logs
-        print("Summary of replacements in each iteration:")
+        self._logger.info("Summary of replacements in each iteration:")
         for start_token, replacements in replacement_logs:
-            print(f"Start token {start_token}: {replacements} replacements")
+            self._logger.info(f"Start token {start_token}: {replacements} replacements")
 
         return df

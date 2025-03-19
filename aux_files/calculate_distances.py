@@ -1,3 +1,4 @@
+import json
 import sys
 from typing import List
 import numpy as np
@@ -8,6 +9,7 @@ import pathlib
 import pandas as pd
 
 path_models_destination = pathlib.Path("data/source/cpv_models")
+data_path = "data/source/place_all_embeddings_metadata_only_augmented.parquet"
 topn=300
 lb=0
 
@@ -84,4 +86,10 @@ for directory in path_models_destination.iterdir():
     print(f"Finished {directory}")
     print("-----------------------------------------------------")
     
-    
+    path_config = directory / "trainconfig.json"
+    with open(path_config, "r") as f:
+        config = json.load(f)
+        config["TrDtSet"] = data_path
+    # save the modified config
+    with open(path_config, "w") as f:
+        json.dump(config, f)

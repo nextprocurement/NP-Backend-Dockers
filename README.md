@@ -82,10 +82,7 @@ This multi-container application is orchestrated using a docker-compose script, 
 
 This RESTful API serves as an entry point for indexing and performing a series of queries to retrieve information from the Solr search engine. It essentially acts as a Python wrapper that encapsulates Solr's fundamental functionalities within a Flask-based framework.
 
-It has dependencies on the ``np_solr`` and ``np-tools`` services and requires access to the following mounted volumes:
-
-- ``./data/source``
-- ``./np_config``
+It has dependencies on the ``np_solr`` and ``np-tools`` services and requires access to the mounted volumes ``./data/source`` and ``./np_config``.
 
 ### np-solr
 
@@ -105,15 +102,17 @@ This service runs Zookeeper, which is essential for Solr to coordinate cluster n
 
 ### np-solr-config
 
-This service handles Solr configuration. It is constructed using the Dockerfile located in the ``solr-config`` directory. This service has dependencies on the Solr and zoo services and mounts the Docker socket and the ``bash_scripts`` directory, which contains a script for initializing the Solr configuration for the NextProcuremetn proyect.
+This service handles Solr configuration. It is constructed using the Dockerfile located in the ``solr-config`` directory. This service has dependencies on the Solr and zoo services and mounts the Docker socket and the ``bash_scripts`` directory, which contains a script for initializing the Solr configuration for the NextProcurement project.
 
 ### np-tools
 
-This service deploys a RESTful API with a series of auxiliary endpoints. Right now it contains enpoints to:
-
-- Retrieve embeddings for a given document or word based on a Word2Vec (a precalculated Word2Vec model is assumed) or SBERT.
-- Retrieve document-topic representation of a given document based on a trained topic model.
-- Retrieve the lemmas of a given document.
+This service deploys a RESTful API with a series of auxiliary endpoints for tender processing. The current state includes endpoints for:
+- Predicting document-topic representation using a trained model.
+- Extracting lemmas from text.
+- Predicting the CPV (Common Procurement Vocabulary) code.
+- Extracting raw text from PDF files.
+- Extracting objectives from documents.
+- Extracting metadata from documents.
 
 It has the same mounted volumes as the ``np-solr-api`` service.
 
@@ -132,6 +131,6 @@ Visit the [Wiki page](https://github.com/nextprocurement/NP-Backend-Dockers/wiki
 This work has received funding from the NextProcurement European Action (grant agreement INEA/CEF/ICT/A2020/2373713-Action 2020-ES-IA-0255).
 
 <p align="center">
-  <img src="static/Images/eu-logo.svg" alt="EU Logo" width="200" style="margin-right: 20px;">
-  <img src="static/Images/nextprocurement-logo.png" alt="Next Procurement Logo" width="200">
+  <img src="static/Images/eu-logo.svg" alt="EU Logo" height=100 width="200" style="margin-right: -27px;">
+  <img src="static/Images/nextprocurement-logo.png" alt="Next Procurement Logo" height=100 width="200">
 </p>

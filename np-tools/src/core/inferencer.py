@@ -51,7 +51,7 @@ def sum_up_to(vector: np.ndarray, max_sum: int) -> np.ndarray:
 
 class Inferencer(object):
     """
-    Wrapper for a NP-Search-Tools Topic Models Inferencers
+    Wrapper for a NP-Search-Tools Topic Models Inferencer
     Assumes model is saved as a pickle file.
     """
 
@@ -60,7 +60,7 @@ class Inferencer(object):
         logger: logging.Logger
     ) -> None:
         """
-        Initilization Method
+        Init Method
 
         Parameters
         ----------
@@ -77,9 +77,10 @@ class Inferencer(object):
 
         return
 
-    def transform_inference_output(self,
-                                   thetas32: np.array,
-                                   max_sum: int) -> List[dict]:
+    def transform_inference_output(
+        self,
+        thetas32: np.array,
+        max_sum: int) -> List[dict]:
         """Saves the topic distribution for each document in text format (tXX|weightXX)
 
         Parameters
@@ -119,16 +120,14 @@ class Inferencer(object):
             return rpr
 
         if thetas32.ndim == 2:
-            doc_tpc_rpr = [get_doc_str_rpr(thetas32[row, :], max_sum)
-                           for row in range(len(thetas32))]
+            doc_tpc_rpr = [get_doc_str_rpr(thetas32[row, :], max_sum) for row in range(len(thetas32))]
         elif thetas32.ndim == 1:
             doc_tpc_rpr = [get_doc_str_rpr(thetas32, max_sum)]
         else:
             self._logger.error(
                 f"-- -- Thetas32 has wrong number of dimensions when transforming inference output")
         ids = np.arange(len(thetas32))
-        df = pd.DataFrame(list(zip(ids, doc_tpc_rpr)),
-                          columns=['id', 'thetas'])
+        df = pd.DataFrame(list(zip(ids, doc_tpc_rpr)), columns=['id', 'thetas'])
 
         return df.to_dict(orient='records')
 

@@ -164,3 +164,6 @@ data
 *.DS_Store
 stats_procurement.txt
 np-tools/mallet-2.0.8
+np-tools/checkpoint.pkl
+np-tools/cache_final
+.vscode

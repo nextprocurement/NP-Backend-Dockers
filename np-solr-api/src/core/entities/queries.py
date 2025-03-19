@@ -18,7 +18,7 @@ class Queries(object):
         # http://localhost:8983/solr/{col}/select?fl=doctpc_{model}&q=id:{id}
         # ================================================================
         self.Q1 = {
-            'q': 'id:{}',
+            'q': 'id:"{}"',
             'fl': 'doctpc_{}',
         }
 
@@ -58,7 +58,7 @@ class Queries(object):
         # ================================================================
         self.Q5 = {
             'q': "{{!vd f=doctpc_{} vector=\"{}\" distance=\"{}\"}}",
-            'fl': "id,objective,place_id,link,score",
+            'fl': "id,objective,link,score",
             'start': '{}',
             'rows': '{}'
         }
@@ -75,7 +75,7 @@ class Queries(object):
         # 3. Execute Q6
         # ================================================================
         self.Q6 = {
-            'q': 'id:{}',
+            'q': 'id:"{}"',
             'fl': '{}'
         }
 
@@ -87,7 +87,7 @@ class Queries(object):
         # ================================================================
         self.Q7 = {
             'q': '{}:{}',
-            'fl': 'id',
+            'fl': 'id,objective',
             'start': '{}',
             'rows': '{}'
         }
@@ -116,7 +116,7 @@ class Queries(object):
         self.Q9 = {
             'q': '*:*',
             'sort': 'payload(doctpc_{},t{}) desc, nwords_per_doc desc',
-            'fl': 'payload(doctpc_{},t{}), nwords_per_doc, id',
+            'fl': 'payload(doctpc_{},t{}), objective, nwords_per_doc, id',
             'start': '{}',
             'rows': '{}'
         }  # doctpc_{}
@@ -149,7 +149,7 @@ class Queries(object):
         # http://localhost:8983/solr/np_all/select?fl=lemmas&q=id:505302
         # ================================================================
         self.Q15 = {
-            'q': 'id:{}',
+            'q': 'id:"{}"',
             'fl': 'lemmas',
             'start': '{}',
             'rows': '{}'
@@ -163,7 +163,7 @@ class Queries(object):
         # ##################################################################
         self.Q20 = {
             'q': "{{!knn f=tpc_embeddings topK=100}}{}",
-            'fl': "id,title,link,place_id,score",
+            'fl': "id,objective,link,place_id,score",
             'start': '{}',
             'rows': '{}'
         }

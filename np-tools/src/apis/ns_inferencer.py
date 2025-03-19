@@ -8,7 +8,7 @@ Date: 19/03/2024
 import os
 import pathlib
 import time
-from flask_restx import Namespace, Resource, reqparse
+from flask_restx import Namespace, Resource, reqparse # type: ignore
 
 from src.core.inferencer import Inferencer
 
@@ -19,7 +19,7 @@ logger = logging.getLogger('Inferencer')
 # ======================================================
 # Define namespace for inference operations
 # ======================================================
-api = Namespace('Inference operations')
+api = Namespace('Inference')
 
 # ======================================================
 # Create Inferencer object
@@ -53,9 +53,9 @@ infer_doc_parser.add_argument(
     required=False
 )
 
-@api.route('/inferDoc/')
-class InferDoc(Resource):
-    """Given a text and a model (trained toppic model), this endpoint returns the inference of the text using the model.
+@api.route('/predict/')
+class predict(Resource):
+    """Given a text and a model (trained topic model), this endpoint returns the inference of the text using the model.
     """
     @api.doc(
         parser=infer_doc_parser,
@@ -64,7 +64,7 @@ class InferDoc(Resource):
             501: 'Model for inference not found: An error occurred while trying to find the model for inference',
             502: 'Inference generation error: An error occurred while generating the inference'
         })
-    def get(self):
+    def post(self):
 
         start_time = time.time()
 
@@ -107,21 +107,24 @@ class InferDoc(Resource):
             logger.info(
             f"-- -- Model for inference: {model_for_infer.as_posix()}")
         else:        
-            model_for_infer = args["model_for_infer"]
-            logger.error(
-                f"-- -- Model for inference not found: {model_for_infer}")
-            end_time = time.time() - start_time
-            sc = 501
-            responseHeader = {
-                "status": sc,
-                "time": end_time,
-                "error": f"Model for inference not found: {model_for_infer}"
-            }
-            response = {
-                "responseHeader": responseHeader,
-                "response": None
-            }
-            return response, sc
+            model_for_infer = look_dir / f"default_{granularity}"
+            if not model_for_infer.is_dir():
+                logger.error(
+                    f"-- -- Model for inference not found: { args["model_for_infer"]} and default model is also not available.")
+                end_time = time.time() - start_time
+                sc = 501
+                responseHeader = {
+                    "status": sc,
+                    "time": end_time,
+                    "error": f"Model for inference not found: { args["model_for_infer"]}"
+                }
+                response = {
+                    "responseHeader": responseHeader,
+                    "response": None
+                }
+                return response, sc
+            else:
+                logger.info(f"Using default model for inference: {model_for_infer}")
 
         # Perform inference
         if isinstance(text_to_infer, str):
@@ -140,7 +143,6 @@ class InferDoc(Resource):
             }
             return response, sc
         
-        logger.info(f"-- -- THIS IS THE Text to infer: {text_to_infer_lst}")
         try:
             thetas = inferencer.predict(
                 texts=text_to_infer_lst,

@@ -1,0 +1,10 @@
+| Endpoint               | Description                                                                                                                | Format                             |
+|------------------------|----------------------------------------------------------------------------------------------------------------------------|------------------------------------|
+| /embedding/generate    | Generates embeddings for a given text using either a Word2Vec model trained on topic descriptions or a SentenceBERT model. | ```json {"thetas": thetas} ```    |
+| /inference/predict     | Predicts the topic proportions of a given document based on a specified topic model.                                       | ```json {"thetas": thetas} ```    |
+| /lemmatization/extract | Lemmatizes a given text.                                                                                                   | ```json {"thetas": thetas} ```    |
+| /cpv/predict           | Predicts the Common Procurement Vocabulary (CPV) for a given tender objective.                                            | ```json {"thetas": thetas} ```    |
+| /pdf/extract_text      | Extracts the raw text from an uploaded PDF document (without OCR).                                                         | ```json {"thetas": thetas} ```    |
+| /objective/extract     | Extracts the text related to the objective from the raw text of a *Pliego de Condiciones Técnicas*.                        | ```json {"thetas": thetas} ```    |
+| /metadata/extract      | Extracts procurement metadata, including *Award criteria* (Criterios de adjudicación),  *Eligibility criteria* (Criterios de solvencia) and        *Special contract execution conditions* (Condiciones especiales de ejecución del contrato).                                                                         | ```json {"thetas": thetas} ```    |
+|                       

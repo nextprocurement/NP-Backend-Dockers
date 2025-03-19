@@ -1,6 +1,5 @@
 import pathlib
 from src.pdf_parser import PDFParser
-from src.summarizer import Summarizer
 from src.utils import clean_string
 
 import argparse
@@ -9,32 +8,30 @@ def getPages (pages):
     return [ (page['element_content']) for page in  pages ]
 
 def correctText (text):
-    lang_tool = language_tool_python.LanguageTool('es-ES', remote_server='http://0.0.0.0:8081')
+    lang_tool = language_tool_python.LanguageTool('es-ES', remote_server='http://0.0.0.0:8081') # type: ignore
     try:
         textc = lang_tool.correct (text)
     except:
         textc = 'NA'
-        import ipdb;ipdb.set_trace()
-
     return textc
 
 def getRawText (data ):
-            output = {}
-            output['metadata'] = data['metadata']
-            output['raw_text'] = " ".join (str(element[0]) for element in [ getPages (page['content']) for page in data['pages']])
-            #textc = clean_string (output['raw_text']).encode().decode('UTF-8', errors='ignore').split()
-            '''
-            textc = clean_string (output['raw_text']).split()
+    output = {}
+    output['metadata'] = data['metadata']
+    output['raw_text'] = " ".join (str(element[0]) for element in [ getPages (page['content']) for page in data['pages']])
+    #textc = clean_string (output['raw_text']).encode().decode('UTF-8', errors='ignore').split()
+    '''
+    textc = clean_string (output['raw_text']).split()
 
-            num = 1000
-            chunks = [textc[i:i + num] for i in range(0, len(textc), num)]
-            #lang_tool = language_tool_python.LanguageTool('en-US', remote_server='http://0.0.0.0:8081')
-            #import ipdb ; ipdb.set_trace()
-            #textc = lang_tool.correct (text)
-            chunksc = [ correctText (' '.join (chunk)) for chunk in chunks]
-            #import ipdb ; ipdb.set_trace()
-            output['raw_textc'] =  ' '.join(str(chunk) for chunk in chunksc)'''
-            return (output['raw_text'])
+    num = 1000
+    chunks = [textc[i:i + num] for i in range(0, len(textc), num)]
+    #lang_tool = language_tool_python.LanguageTool('en-US', remote_server='http://0.0.0.0:8081')
+    #import ipdb ; ipdb.set_trace()
+    #textc = lang_tool.correct (text)
+    chunksc = [ correctText (' '.join (chunk)) for chunk in chunks]
+    #import ipdb ; ipdb.set_trace()
+    output['raw_textc'] =  ' '.join(str(chunk) for chunk in chunksc)'''
+    return (output['raw_text'])
 
 def main():
 
@@ -70,22 +67,6 @@ def main():
     if (args.output):
         print(getRawText ( document ))
 
-    if (args.summary):
-
-        # Create a Summarizer with the default parameters and summarize the PDF file
-        ## TO USE THE OPENAI MODEL, UNCOMMENT THE FOLLOWING LINE
-        summarizer = Summarizer(
-            model_type="openai",
-            model_name="gpt-4",
-            instructions="Proporcione un resumen conciso del texto proporcionado en el mismo idioma que el texto.",
-        )
-    ## TO USE THE HUGGINGFACE MODEL, UNCOMMENT THE FOLLOWING LINE
-    #summarizer = Summarizer(
-    #    model_type="hf",
-    #    model_name="HuggingFaceH4/zephyr-7b-beta",
-    #)
-    #summarizer.summarize(pdf_file=pdf_file, path_save=path_save)
-    
     return
 
 

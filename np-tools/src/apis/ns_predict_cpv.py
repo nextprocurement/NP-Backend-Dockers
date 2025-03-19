@@ -6,36 +6,21 @@ from flask import request
 from flask_restx import Namespace, Resource, reqparse
 from src.core.cpv_classifier_5 import CPVClassifierOpenAI
 
-# -----------------------------
-# ✅ Cargar Variables de Entorno
-# -----------------------------
-load_dotenv()  # Cargar las variables desde el archivo .env
+load_dotenv()  
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    raise ValueError("La variable de entorno OPENAI_API_KEY no está configurada")
+    raise ValueError("The OpenAI API key is missing. Please set it in the .env file.")
 
-# -----------------------------
-# ✅ Logging Configuration
-# -----------------------------
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('PredictCpv')
 
-# -----------------------------
-# ✅ Flask Application Initialization
-# -----------------------------
-api = Namespace('Cpv operations')
+api = Namespace('CPV Prediction')
 
-# -----------------------------
-# ✅ Request Parser for Input Validation
-# -----------------------------
 cpv_parser = reqparse.RequestParser()
 cpv_parser.add_argument("texts", help="Text(s) to predict CPV codes", action='split', required=True)
 
-# -----------------------------
-# ✅ API Endpoint for CPV Prediction
-# -----------------------------
-@api.route('/predictCpv')
-class PredictCpv(Resource):
+@api.route('/predict')
+class predict(Resource):
     @api.doc(
         parser=cpv_parser,
         responses={
@@ -74,12 +59,12 @@ class PredictCpv(Resource):
                 "predictions": results
             }
 
-            logger.info(f"✅ CPV code(s) generated successfully: {results}")
+            logger.info(f"CPV code(s) generated successfully: {results}")
             return response, 200
 
         except Exception as e:
             execution_time = round(time.time() - start_time, 2)
-            logger.error(f"❌ CPV code generation error: {str(e)}")
+            logger.error(f"CPV code generation error: {str(e)}")
 
             response = {
                 "status": 502,

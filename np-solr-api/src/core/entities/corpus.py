@@ -3,7 +3,7 @@ This module is a class implementation to manage and hold all the information ass
 
 Author: Lorena Calvo-Bartolomé
 Date: 27/03/2023
-Modifed: 24/01/2024 (Updated for NP-Solr-Service (NextProcurement Proyect))
+Modifed: 24/01/2024 (Updated for NP-Solr-Service (NextProcurement Project))
 """
 
 import configparser
@@ -93,12 +93,17 @@ class Corpus(object):
         self._logger.info(f"SearcheableField {self.SearcheableField}")
 
         # Rename necessary fields
+        # if there is already an "id" field that is different from self.id_field, rename it to "id_"
+        if "id" in ddf.columns and "id" != self.id_field:
+            ddf = ddf.rename(columns={"id": "id_"})
         ddf = ddf.rename(columns={
             self.id_field: "id",
             self.title_field: "title",
             self.date_field: "date"
         })
 
+        self._logger.info(ddf.columns)
+        self._logger.info("LLEGA AQUI")
         dictionary = Dictionary()
 
         def process_partition(partition):
@@ -184,6 +189,9 @@ class Corpus(object):
         ddf = dd.read_parquet(self.path_to_raw).fillna("")
 
         # Rename id-field to id, title-field to title and date-field to date
+        # if there is already an "id" field that is different from self.id_field, rename it to "id_"
+        if "id" in ddf.columns and "id" != self.id_field:
+            ddf = ddf.rename(columns={"id": "id_"})
         ddf = ddf.rename(
             columns={self.id_field: "id",
                      self.title_field: "title",
