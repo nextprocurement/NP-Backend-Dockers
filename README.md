@@ -1,5 +1,7 @@
 # NP-Backend-Dockers
 
+[![PyPI - License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/nextprocurement/NP-Backend-Dockers/blob/main/LICENSE)
+
 - [NP-Backend-Dockers](#np-backend-dockers)
   - [Overview](#overview)
   - [Steps for deployment](#️-steps-for-deployment)

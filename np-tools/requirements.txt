@@ -38,6 +38,7 @@ pymupdf
 pdf2image
 skops
 faiss-cpu
-dspy
+dspy==2.6.3
 bert_score
 ollama
+openpyxl

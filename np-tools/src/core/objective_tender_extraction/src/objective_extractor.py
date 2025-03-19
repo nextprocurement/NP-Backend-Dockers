@@ -223,7 +223,7 @@ class ObjetiveExtractorModule(dspy.Module):
             '/ (no objective is present in the document)',
             'No objective is present in this document.',
             'The objective of the tender is not present in the document.'
-        ]
+        ]   
 
     def _process_output(self, text):
 
@@ -233,20 +233,20 @@ class ObjetiveExtractorModule(dspy.Module):
             return text
 
     def forward(self, text):
-        self._logger.info("** ** the length of the text is: ", len(text))
+        #self._logger.info("** ** the length of the text is: ", len(text))
         pred = self.predict(TENDER=text)
 
         return dspy.Prediction(objective=self._process_output(pred.OBJECTIVE))
     
-    def dump_state(self, save_verbose=False, ensure_ascii=False, escape_forward_slashes=False):
+    #def dump_state(self, save_verbose=False, ensure_ascii=False, escape_forward_slashes=False):
         
-        self._logger.info(self.named_parameters())
-        return {name: param.dump_state() for name, param in self.named_parameters()}
+        #self._logger.info(self.named_parameters())
+    #    return {name: param.dump_state() for name, param in self.named_parameters()}
     
-    def save(self, path, save_field_meta=False):
-        self._logger.info("*"*50)
-        with open(path, "w") as f:
-            f.write(ujson.dumps(self.dump_state(save_field_meta), indent=2, ensure_ascii=False, escape_forward_slashes=False))
+    #def save(self, path, save_field_meta=False):
+        #self._logger.info("*"*50)
+    #    with open(path, "w") as f:
+    #        f.write(ujson.dumps(self.dump_state(save_field_meta), indent=2, ensure_ascii=False, escape_forward_slashes=False))
 
 
 #######################################################################
@@ -258,7 +258,7 @@ class ObjectiveExtractor(object):
         model_type: str = "llama",
         open_ai_model: str = "gpt-3.5-turbo",
         path_open_api_key="/export/usuarios_ml4ds/lbartolome/NextProcurement/NP-Search-Tool/.env",
-        path_tr_data="/export/usuarios_ml4ds/lbartolome/NextProcurement/NP-Text_Object/data/admin_eval_task/curated",
+        path_tr_data="src/core/objective_tender_extraction/data/admin_eval_task/curated",
         trained_promt="/export/usuarios_ml4ds/lbartolome/NextProcurement/NP-Text_Object/data/prompts/ObjetiveExtractor-saved.json",
         do_train=False,
         logger: logging.Logger = None,
@@ -275,7 +275,7 @@ class ObjectiveExtractor(object):
             self.lm = dspy.LM(
                 "ollama_chat/qwen2.5:32b",
                 #"ollama_chat/llama3:70b-instruct",
-                api_base="http://127.0.0.1:11434"  
+                api_base="http://kumo01.tsc.uc3m.es:11434"  
             )
             
         elif model_type == "openai":
@@ -296,7 +296,7 @@ class ObjectiveExtractor(object):
                 model_type="qwen2.5:32b")
                 #model_type="llama3:70b-instruct")
             
-            INSTRUCTIONS_PATH = "/export/usuarios_ml4ds/lbartolome/NextProcurement/NP-Text_Object/src/objective_tender_extraction/templates/extract_objective_v1.txt"
+            INSTRUCTIONS_PATH = "src/core/objective_tender_extraction/src/templates/extract_objective_v1.txt"
             with open(INSTRUCTIONS_PATH, 'r') as file: self.template = file.read()
 
             self._logger.info(
@@ -398,7 +398,7 @@ class ObjectiveExtractor(object):
 
         return score
 
-    def optimize_module(self, data_path, mbd=16, mld=64, ncp=64, mr=5, dev_size=0.25):
+    def optimize_module(self, data_path, mbd=4, mld=16, ncp=2, mr=1, dev_size=0.25):
     #(self, data_path, mbd=4, mld=16, ncp=2, mr=1, dev_size=0.25):  # mld=16
     #
 
@@ -532,10 +532,10 @@ class ObjectiveExtractor(object):
                 df.loc[index, processed_column] = True
 
                 # Save checkpoint after every `save_interval` rows
-                #if index % save_interval == 0:
-                #    self._logger.info(f"-- -- Saving checkpoint to {checkpoint_path} at row {index}")
-                #    with open(checkpoint_path, 'wb') as f:
-                #        pickle.dump(df, f)
+                if index % save_interval == 0:
+                    self._logger.info(f"-- -- Saving checkpoint to {checkpoint_path} at row {index}")
+                    with open(checkpoint_path, 'wb') as f:
+                        pickle.dump(df, f)
 
             return df
 
@@ -578,10 +578,10 @@ class ObjectiveExtractor(object):
             return df, replacement_logs
 
         # Load checkpoint if it exists
-        #if os.path.exists(checkpoint_path):
-        #    self._logger.info(f"Loading checkpoint from {checkpoint_path}")
-        #    with open(checkpoint_path, 'rb') as f:
-        #        df = pickle.load(f)
+        if os.path.exists(checkpoint_path):
+            self._logger.info(f"Loading checkpoint from {checkpoint_path}")
+            with open(checkpoint_path, 'rb') as f:
+                df = pickle.load(f)
 
         # Initialize columns if not already done
         if "objective" not in df.columns:
@@ -593,9 +593,9 @@ class ObjectiveExtractor(object):
         df, replacement_logs = process_extractions(df, col_extract, score_column="in_text_score", objective_column="objective")
 
         # Final save at the end of processing
-        #self._logger.info(f"Final save to {checkpoint_path}")
-        #with open(checkpoint_path, 'wb') as f:
-        #    pickle.dump(df, f)
+        self._logger.info(f"Final save to {checkpoint_path}")
+        with open(checkpoint_path, 'wb') as f:
+            pickle.dump(df, f)
 
         # Print the replacement logs
         self._logger.info("Summary of replacements in each iteration:")

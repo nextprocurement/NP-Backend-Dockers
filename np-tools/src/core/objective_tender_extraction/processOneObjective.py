@@ -1,4 +1,5 @@
 import argparse
+import json
 import pandas as pd # type: ignore
 from src.objective_extractor import ObjectiveExtractor
 
@@ -12,11 +13,19 @@ def main():
 
     df = pd.DataFrame([{"text": args.document}])
     
-    extractor = ObjectiveExtractor(do_train=False, trained_promt="src/templates/ObjectiveExtractor-saved.json")
-    df = extractor.predict(df, col_extract="text", token_starts=args.token_starts)
+    extractor = ObjectiveExtractor(do_train=False, trained_promt="/data/source/ObjectiveExtractor-saved.json")
+    df = extractor.predict(df, col_extract="text", token_starts=args.token_starts, checkpoint_path="checkpoint.pkl")
+    
+    # delete checkpoint file
+    import os
+    path_remove = "checkpoint.pkl"
+    os.remove(path_remove)
 
-    print(df.to_dict(orient="records")[0])
-
+    print(json.dumps({
+        "objective": df.to_dict(orient="records")[0]["objective"],
+        "in_text_score": df.to_dict(orient="records")[0]["in_text_score"]
+    }))
+    
     return
 
 

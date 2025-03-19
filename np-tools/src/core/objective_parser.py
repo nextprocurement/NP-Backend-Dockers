@@ -40,15 +40,9 @@ class ObjectiveParser:
 
             # Try parsing JSON output if applicable
             try:
-                parsed_output = json.loads(extracted_objective)
-                return parsed_output.get("objective", extracted_objective)
+                return json.loads(extracted_objective)
             except json.JSONDecodeError:
                 return extracted_objective
-            
-            # remove checkpoint generated
-            path_remove = "checkpoint.pkl"
-            # remove checkpoint file
-            os.remove(path_remove)
 
         except subprocess.CalledProcessError as e:
             print(e)
@@ -58,8 +52,3 @@ class ObjectiveParser:
         except Exception as e:
             self._logger.error(f"Unexpected error: {str(e)}")
             return ""
-
-# if __name__ == "__main__":
-#     parser = ObjectiveParser()
-#     text = "The objective of this tender is to provide services for the development of a new software."
-#     print(parser.parse(text))

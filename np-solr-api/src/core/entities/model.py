@@ -7,7 +7,7 @@ This module assumes that the topic model has been trained using the TMmodel clas
 
 Author: Lorena Calvo-Bartolomé
 Date: 27/03/2023
-Modifed: 24/01/2024 (Updated for NP-Solr-Service (NextProcurement Proyect))
+Modified: 24/01/2024 (Updated for NP-Solr-Service (NextProcurement Project))
 """
 
 

@@ -50,7 +50,7 @@ class extract(Resource):
             end_time = time.time() - start_time
             response = {
                 "responseHeader": {"status": 200, "time": end_time},
-                "response": {"objectives": extracted_objectives},
+                "response": extracted_objectives,
             }
             logger.info("Objectives extracted successfully")
             
