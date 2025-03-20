@@ -13,6 +13,7 @@ numba_logger.setLevel(logging.WARNING)
 app = Flask(__name__)
 # Deactivate the default mask parameter.
 app.config["RESTX_MASK_SWAGGER"] = False
+app.config['MAX_CONTENT_LENGTH'] = 64 * 1024 * 1024  # 
 api.init_app(app)
 
 if __name__ == '__main__':

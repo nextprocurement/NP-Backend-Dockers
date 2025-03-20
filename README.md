@@ -128,6 +128,10 @@ Visit the [Wiki page](https://github.com/nextprocurement/NP-Backend-Dockers/wiki
 
 > *Requirements are directly installed in their respective services at the building-up time.*
 
+### Requirements for NP-Tools "Objective Extractor" Namespace
+
+Download [this file](sample_data/ObjectiveExtractor-saved.json) and place it in the mounted volume `data/source`. This file contains the optimized prompt used for objective extraction in the NP-Tools API.
+
 ## Acknowledgements
 
 This work has received funding from the NextProcurement European Action (grant agreement INEA/CEF/ICT/A2020/2373713-Action 2020-ES-IA-0255).
