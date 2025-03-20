@@ -132,6 +132,13 @@ Visit the [Wiki page](https://github.com/nextprocurement/NP-Backend-Dockers/wiki
 
 Download [this file](sample_data/ObjectiveExtractor-saved.json) and place it in the mounted volume `data/source`. This file contains the optimized prompt used for objective extraction in the NP-Tools API.
 
+### Requirements for Metadata Extraction and CPV Prediction
+
+To run the **metadata extraction** and **CPV prediction** components, you need to provide an OpenAI API key. Make sure to set the following environment variable before running the services:
+
+```bash
+export OPENAI_API_KEY="your-api-key-here"
+
 ## Acknowledgements
 
 This work has received funding from the NextProcurement European Action (grant agreement INEA/CEF/ICT/A2020/2373713-Action 2020-ES-IA-0255).

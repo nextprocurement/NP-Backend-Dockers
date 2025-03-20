@@ -1,6 +1,4 @@
-import pandas as pd
 import xml.etree.ElementTree as ET
-import json
 import re
 import os
 from langchain.prompts import PromptTemplate
@@ -16,13 +14,13 @@ from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 class MetadataExtractor:
     def __init__(self, api_key, logger=None):
         """
-        Initializes the MetadataExtractor with an API key and logger.
+        Inicializa el MetadataExtractor con una API key y un logger.
         """
         self.api_key = api_key
         self.logger = logger
         os.environ["OPENAI_API_KEY"] = self.api_key
 
-        # Initialize LLM and embeddings
+        # Inicializar LLM y embeddings
         self.model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
         self.prompt = self._build_prompt_template()
@@ -58,12 +56,14 @@ class MetadataExtractor:
         """
         return PromptTemplate(template=template, input_variables=["context"])
 
-    def format_content(self, xml_content):
+    def format_content(self, text):
         try:
-            c_et = ET.fromstring(xml_content)
-            return ET.tostring(c_et, method='text', encoding='utf-8').decode('utf-8')
+            if text.strip().startswith("<"):
+                c_et = ET.fromstring(text)
+                return ET.tostring(c_et, method='text', encoding='utf-8').decode('utf-8')
+            return text  # Retornar el texto sin cambios si no es XML
         except Exception:
-            return None
+            return text  # Devolver el texto original si el parseo falla
 
     def create_documents(self, text):
         splitter = RecursiveCharacterTextSplitter(chunk_size=2048, chunk_overlap=256)
@@ -88,55 +88,34 @@ class MetadataExtractor:
                     resultado[key] = seccion.replace(f"### {encabezado}", "").strip()
         return resultado
 
-    def extract_metadata_from_file(self, file):
+    def extract_metadata_from_text(self, text):
+        """
+        Extrae metadatos desde un único texto.
+        """
+        formatted_text = self.format_content(text)
+        if not formatted_text:
+            return {"error": "Invalid text format"}
+
+        docs = self.create_documents(formatted_text)
+        if not docs:
+            return {"error": "Empty content after processing"}
+
+        vector_storage = FAISS.from_documents(docs, self.embeddings)
+        retriever = vector_storage.as_retriever()
+
+        result_chain = (
+            RunnableParallel(context=retriever, question=RunnablePassthrough())
+            | self.prompt
+            | self.model
+            | StrOutputParser()
+        )
+
         try:
-            df = pd.read_parquet(file)
+            context = "\n".join([doc.page_content for doc in docs])
+            result_text = result_chain.invoke(context)
+
+            # ✅ Solo devolver las categorías sin `procurement_id` ni `doc_name`
+            return self.divide_by_categories(self.clean_text(result_text))
+
         except Exception as e:
-            return {"error": f"Failed to read Parquet file: {str(e)}"}, 400
-
-        filtered_df = df[df['doc_name'].str.contains('Pliego_clausulas_administrativas', case=False, na=False)]
-        if filtered_df.empty:
-            return {"error": "No matching documents found in the Parquet file."}, 400
-
-        results = []
-
-        for _, row in filtered_df.iterrows():
-            procurement_id = row['procurement_id']
-            doc_name = row['doc_name']
-            content = row['content']
-
-            formatted_text = self.format_content(content.decode('utf-8') if isinstance(content, bytes) else content)
-            if not formatted_text:
-                continue
-
-            docs = self.create_documents(formatted_text)
-            if not docs:
-                continue
-
-            vector_storage = FAISS.from_documents(docs, self.embeddings)
-            retriever = vector_storage.as_retriever()
-
-            result_chain = (
-                RunnableParallel(context=retriever, question=RunnablePassthrough())
-                | self.prompt
-                | self.model
-                | StrOutputParser()
-            )
-
-            try:
-                context = "\n".join([doc.page_content for doc in docs])
-                result_text = result_chain.invoke(context)
-                result_dict = {
-                    "procurement_id": procurement_id,
-                    "doc_name": doc_name,
-                    **self.divide_by_categories(self.clean_text(result_text))
-                }
-                results.append(result_dict)
-            except Exception as e:
-                results.append({
-                    "procurement_id": procurement_id,
-                    "doc_name": doc_name,
-                    "error": str(e)
-                })
-
-        return results, 200
+            return {"error": str(e)}
