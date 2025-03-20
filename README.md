@@ -134,10 +134,9 @@ Download [this file](sample_data/ObjectiveExtractor-saved.json) and place it in 
 
 ### Requirements for Metadata Extraction and CPV Prediction
 
-To run the **metadata extraction** and **CPV prediction** components, you need to provide an OpenAI API key. Make sure to set the following environment variable before running the services:
+To run the **metadata extraction** and **CPV prediction** components, you need to provide an OpenAI API key. You can obtain an API key by registering at **[OpenAI's API platform](https://platform.openai.com/signup/)**.
 
-```bash
-export OPENAI_API_KEY="your-api-key-here"
+Once you have your API key, add it to an environment variables file (e.g., .env) in the root directory of the project.
 
 ## Acknowledgements
 
