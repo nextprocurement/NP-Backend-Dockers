@@ -32,6 +32,44 @@ services:
               count: 1
               capabilities: [gpu]
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: np-ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    volumes:
+      - ollama:/root/.ollama       
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      start_period: 40s
+      retries: 30
+    networks:
+      - np-net
+    
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: np-ollama-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-lc",
+      "set -e; \
+       echo 'Pulling embeddings mxbai-embed-large...'; \
+       ollama pull mxbai-embed-large; \
+       echo 'Pulling LLM llama3.1:latest...'; \
+       ollama pull llama3.1:latest; \
+       echo 'All models pulled.'"
+    ]
+    networks:
+      - np-net
+    restart: "no"
+
   np-tools:
     build: ./np-tools
     container_name: np-tools
@@ -39,6 +77,11 @@ services:
       - 112:102
     env_file:
       - ./np-tools/.env
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      ollama-init:
+        condition: service_completed_successfully
     networks:
       - np-net
     volumes:
@@ -137,3 +180,6 @@ services:
       resources:
         limits:
           memory: 100GB
+
+volumes:
+  ollama:
