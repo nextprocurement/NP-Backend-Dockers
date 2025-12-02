@@ -4,17 +4,12 @@ import xml.etree.ElementTree as ET
 from typing import Dict, List
 
 from langchain.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.llms import Ollama
 from langchain_community.vectorstores import FAISS
+from langchain.chains.question_answering import load_qa_chain
 from langchain.schema import Document
-from langchain_core.runnables import (
-    RunnableParallel,
-    RunnablePassthrough,
-    RunnableLambda,
-)
 
 
 class MetadataExtractor:
@@ -27,9 +22,9 @@ class MetadataExtractor:
         self,
         ollama_llm: str = "llama3.1",
         ollama_embed_model: str = "mxbai-embed-large",
-        chunk_size: int = 2048,
-        chunk_overlap: int = 256,
-        retriever_k: int = 12,
+        chunk_size: int = 600,
+        chunk_overlap: int = 100,
+        retriever_k: int = 10,
     ):
         self.ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
         self.ollama_llm = ollama_llm
@@ -39,12 +34,12 @@ class MetadataExtractor:
         self.retriever_k = retriever_k
 
         # LLM y embeddings de Ollama (ambos apuntan al mismo host/base_url)
-        # num_ctx para abarcar mejor los fragmentos recuperados
+        # Optimizado: num_predict reducido para respuestas más rápidas
         self.model = Ollama(
             model=self.ollama_llm,
             base_url=self.ollama_host,
-            num_ctx=8192,
-            temperature=0,
+            temperature=0.3,
+            num_predict=2000,  # Reducido de 8000 a 2000 para mayor velocidad
         )
         self.embeddings = OllamaEmbeddings(
             model=self.ollama_embed_model,
@@ -55,53 +50,21 @@ class MetadataExtractor:
 
     # ----------------------- Prompt -----------------------
     def _build_prompt_template(self) -> PromptTemplate:
-        template = """
-Eres un asistente experto en derecho administrativo, especializado en analizar y resumir documentos legales de contratación pública. 
-Tu tarea consiste en **extraer textualmente** los criterios requeridos, según las instrucciones, y organizarlos correctamente.
+        template = """Eres un experto en derecho administrativo. Extrae COMPLETAMENTE la información solicitada del contexto.
 
-### INSTRUCCIONES CLAVE
-
-- Usa exclusivamente **texto literal** del documento. No generes contenido adicional.
-- Si no hay información disponible para un criterio, responde exactamente:
-  "No existe este criterio en este documento."
-- No mezcles información entre secciones.
-- La salida debe contener solo estos tres bloques, con los encabezados EXACTOS:
-
-### Criterios de Adjudicación
-[contenido literal extraído del documento, si lo hay]
-
-### Criterios de Solvencia
-[contenido literal extraído del documento, si lo hay]
-
-### Condiciones Especiales de Ejecución
-[contenido literal extraído del documento, si lo hay]
-
-### DETALLES POR CATEGORÍA
-
-1. **Criterios de Adjudicación**: subcriterios evaluables, puntuación asignada, baremación, ponderación, reglas de desempate.
-2. **Criterios de Solvencia**: requisitos económicos, técnicos o profesionales que debe cumplir el licitador.
-3. **Condiciones Especiales de Ejecución**: criterios sociales, medioambientales, éticos u otros que condicionan la ejecución del contrato.
-
-### EJEMPLO DE RESPUESTA ESPERADA
-
-### Criterios de Adjudicación
-Los criterios serán evaluables automáticamente hasta 60 puntos, considerando el plazo de entrega, metodología y experiencia técnica.
-
-### Criterios de Solvencia
-El licitador deberá acreditar una solvencia económica mínima de 500.000€ y haber ejecutado dos contratos similares.
-
-### Condiciones Especiales de Ejecución
-Se exigirá el cumplimiento de cláusulas medioambientales relativas a la reducción de emisiones.
-
+REGLAS:
+- Copia el texto LITERALMENTE del documento, sin resumir
+- Incluye TODO: listas, fórmulas, cifras, porcentajes, subsecciones
+- Si no hay información relevante, responde: [SIN INFORMACION]
 
 Contexto:
 {context}
 
 Pregunta:
-Extrae y organiza el contenido en los tres bloques anteriores, respetando encabezados y reglas.
-"""
-        # Solo necesitamos "context" como variable; la pregunta está fija.
-        return PromptTemplate(template=template, input_variables=["context"])
+{question}
+
+Respuesta (copia literal del texto encontrado):"""
+        return PromptTemplate(template=template, input_variables=["context", "question"])
 
     # ----------------------- Helpers -----------------------
     @staticmethod
@@ -126,50 +89,70 @@ Extrae y organiza el contenido en los tres bloques anteriores, respetando encabe
         return [Document(page_content=chunk, metadata={"chunk_id": i}) for i, chunk in enumerate(chunks)]
 
     @staticmethod
-    def _clean_text(text: str) -> str:
-        # Limpieza suave: conserva puntuación habitual en pliegos
-        return re.sub(
-            r"[^\w\s.,;:¡!¿?\-()/%€$°#«»“”\"'–—·]",
-            " ",
-            text or "",
-        ).strip()
-
-    @staticmethod
-    def _divide_by_categories(texto: str) -> Dict[str, str]:
+    def _clean_result(text: str) -> str:
         """
-        Recorta el resultado en tres claves basadas en encabezados (tolerante a tildes y espacios):
-        '### Criterios de Adjudicación', '### Criterios de Solvencia',
-        '### Condiciones Especiales de Ejecución'
+        Limpieza de texto mejorada: elimina markdown, deduplica y elimina "no existe".
         """
-        headers_regex = {
-            "criterios_adjudicacion": r"Criterios\s+de\s+Adjudicaci[oó]n",
-            "criterios_solvencia": r"Criterios\s+de\s+Solvencia",
-            "condiciones_especiales": r"Condiciones\s+Especiales\s+de\s+Ejecuci[oó]n",
-        }
-
-        resultado = {k: "" for k in headers_regex}
-        patron = "|".join(headers_regex.values())
-
-        # Partimos por los encabezados "### ..." tolerando espacios extra
-        secciones = re.split(
-            rf"(?=###\s+(?:{patron}))",
-            texto or "",
-            flags=re.IGNORECASE,
-        )
-
-        for seccion in secciones:
-            for key, encabezado_regex in headers_regex.items():
-                m = re.search(rf"###\s+{encabezado_regex}\s*",
-                              seccion, flags=re.IGNORECASE)
-                if m:
-                    contenido = seccion[m.end():].strip()
-                    resultado[key] = contenido
-        return resultado
-
-    @staticmethod
-    def _format_docs_for_context(docs: List[Document]) -> str:
-        # Junta los top-k chunks recuperados en un solo “Contexto”
-        return "\n\n".join(d.page_content for d in docs)
+        if not text:
+            return ""
+        
+        # Eliminar caracteres markdown
+        text = re.sub(r'\*\*', '', text)  # Eliminar **
+        text = re.sub(r'\*', '', text)    # Eliminar *
+        text = re.sub(r'###', '', text)    # Eliminar ###
+        text = re.sub(r'##', '', text)     # Eliminar ##
+        text = re.sub(r'#', '', text)      # Eliminar #
+        text = re.sub(r'__', '', text)     # Eliminar __
+        text = re.sub(r'_', '', text)      # Eliminar _
+        
+        # Eliminar espacios múltiples excesivos
+        text = re.sub(r'\s{3,}', ' ', text)
+        text = text.strip()
+        
+        # DEDUPLICACIÓN: Eliminar párrafos y sentencias duplicadas
+        # Dividir por oraciones (puntos, exclamaciones, interrogaciones)
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        
+        # Eliminar duplicados manteniendo el orden
+        seen = set()
+        unique_sentences = []
+        for sent in sentences:
+            sent_clean = sent.strip()
+            # Normalizar para comparar (lowercase, sin espacios extra)
+            sent_key = re.sub(r'\s+', ' ', sent_clean).lower()[:100]  # Primeros 100 chars para comparar
+            
+            if sent_key not in seen and len(sent_clean) > 10:  # Ignorar frases muy cortas
+                seen.add(sent_key)
+                unique_sentences.append(sent_clean)
+        
+        text = ' '.join(unique_sentences)
+        
+        # Detectar [SIN INFORMACION] y devolver string vacío
+        if '[SIN INFORMACION]' in text.upper():
+            return ""
+        
+        # Si la respuesta indica que no existe información, devolver string vacío
+        no_info_patterns = [
+            r'no.*existe.*criterio.*documento',
+            r'no.*se.*establece',
+            r'no.*se.*mencionan',
+            r'no.*se.*exigen',
+            r'no.*hay.*información',
+            r'absolutamente.*no.*encuentro',
+            r'ninguna.*información.*relevante',
+            r'no.*aparece.*documento',
+            r'no.*contiene.*información',
+            r'no.*se.*han.*establecido',
+            r'no.*se.*ha.*establecido'
+        ]
+        
+        # Comprobar si la respuesta es muy corta y contiene indicadores de "no existe"
+        if len(text) < 200:  # Si es muy corta
+            for pattern in no_info_patterns:
+                if re.search(pattern, text, re.IGNORECASE):
+                    return ""  # Devolver string vacío
+        
+        return text
 
     # ----------------------- Pipeline principal -----------------------
     def extract_metadata_from_text(self, text: str) -> Dict[str, str]:
@@ -178,6 +161,8 @@ Extrae y organiza el contenido en los tres bloques anteriores, respetando encabe
         - criterios_adjudicacion
         - criterios_solvencia
         - condiciones_especiales
+        
+        Usa RetrievalQA con 3 consultas separadas para extraer cada categoría.
         """
         formatted = self._format_content(text)
         if not formatted:
@@ -201,24 +186,49 @@ Extrae y organiza el contenido en los tres bloques anteriores, respetando encabe
         retriever = vector_storage.as_retriever(
             search_kwargs={"k": self.retriever_k})
 
-        # ---- RAG real: query corta y contexto = top-k chunks formateados ----
-        def build_query(_: str) -> str:
-            # Consulta fija y breve que guía la recuperación
-            return "criterios adjudicación solvencia condiciones especiales ejecución contratación pública"
-
-        build_context = (
-            RunnableLambda(build_query)          # -> query string
-            | retriever                          # -> List[Document]
-            | RunnableLambda(self._format_docs_for_context)  # -> str
-            # -> dict para el PromptTemplate
-            | RunnableLambda(lambda txt: {"context": txt})
+        # Crear cadena QA con load_qa_chain
+        qa_chain = load_qa_chain(
+            llm=self.model,
+            chain_type="stuff",
+            prompt=self.prompt
         )
 
-        chain = build_context | self.prompt | self.model | StrOutputParser()
+        # Consultas específicas para cada categoría (optimizadas para ser más directas)
+        queries = {
+            "criterios_adjudicacion": (
+                "Extrae los criterios de adjudicación o evaluación de ofertas: "
+                "subcriterios, puntuaciones, baremos, fórmulas, ponderación, reglas de desempate."
+            ),
+            "criterios_solvencia": (
+                "Extrae los criterios de solvencia, capacidad económica, técnica o profesional: "
+                "requisitos económicos, técnicos, medios materiales, humanos, experiencia, clasificación."
+            ),
+            "condiciones_especiales": (
+                "Extrae las condiciones especiales de ejecución: "
+                "criterios sociales, medioambientales, sostenibilidad, responsabilidad social."
+            )
+        }
 
-        try:
-            raw = chain.invoke(None)
-            cleaned = self._clean_text(raw)
-            return self._divide_by_categories(cleaned)
-        except Exception as e:
-            return {"error": f"Fallo al invocar LLM de Ollama en {self.ollama_host}: {str(e)}"}
+        resultado = {}
+        
+        # Procesar cada consulta por separado
+        for key, query in queries.items():
+            try:
+                # Obtener documentos relevantes del retriever
+                relevant_docs = retriever.get_relevant_documents(query)
+                
+                # Ejecutar la cadena QA con los documentos y la pregunta
+                result = qa_chain.invoke({
+                    "input_documents": relevant_docs,
+                    "question": query
+                })
+                
+                # Extraer el texto del resultado
+                result_text = result.get("output_text", "") if isinstance(result, dict) else str(result)
+                resultado[key] = self._clean_result(result_text)
+            except Exception as e:
+                resultado[key] = ""
+                # Log del error pero continuar con las demás consultas
+                print(f"Error procesando {key}: {str(e)}")
+
+        return resultado
